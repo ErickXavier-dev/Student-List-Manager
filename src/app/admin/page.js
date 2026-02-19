@@ -5,16 +5,18 @@ import ExcelUploader from '@/components/ExcelUploader';
 import CollectionManager from '@/components/CollectionManager';
 import StudentCard from '@/components/StudentCard';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { UserCog, ReceiptText } from 'lucide-react';
+import { UserCog, ReceiptText, Layers, Download, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState('students');
+  const [activeTab, setActiveTab] = useState('payments'); // Default to payments as it's most used
   const [students, setStudents] = useState([]);
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'paid', 'pending'
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [search, setSearch] = useState('');
 
   const fetchData = async () => {
     try {
@@ -40,12 +42,11 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 10000); // Refresh every 10s
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const handlePaymentUpdate = (studentId, newState) => {
-    // Optimistic update
     setStudents(prev => prev.map(s => {
       if (s._id === studentId) {
         const newPayments = { ...s.payments, [selectedCollection]: newState };
@@ -55,102 +56,202 @@ export default function AdminPage() {
     }));
   };
 
-  // Filter students based on status
-  const filteredStudents = students.filter(s => {
-    if (!selectedCollection) return true;
-    if (filterStatus === 'all') return true;
-    const isPaid = s.payments?.[selectedCollection];
-    return filterStatus === 'paid' ? isPaid : !isPaid;
-  });
+  // Filter students based on status and search
+  const getFilteredStudents = () => {
+    return students.filter(s => {
+      const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+        s.registerNumber.toString().includes(search);
+
+      if (!matchesSearch) return false;
+      if (activeTab === 'students') return true; // No payment filter in Students tab
+
+      if (!selectedCollection) return true;
+      if (filterStatus === 'all') return true;
+      const isPaid = s.payments?.[selectedCollection];
+      return filterStatus === 'paid' ? isPaid : !isPaid;
+    });
+  };
+
+  const filteredStudents = getFilteredStudents();
+
+  const handleExport = () => {
+    const dataToExport = filteredStudents.map(s => {
+      const base = {
+        "Register Number": s.registerNumber,
+        "Name": s.name,
+      };
+
+      if (activeTab === 'payments' && selectedCollection) {
+        const col = collections.find(c => c._id === selectedCollection);
+        base["Collection"] = col?.title;
+        base["Amount"] = col?.amount;
+        base["Status"] = s.payments?.[selectedCollection] ? "Paid" : "Pending";
+      } else {
+        // Export all payments in columns if in Students tab
+        collections.forEach(c => {
+          base[c.title] = s.payments?.[c._id] ? "Paid" : "Pending";
+        });
+      }
+      return base;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Students");
+    XLSX.writeFile(wb, `ListManager_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
 
   return (
     <div className="space-y-8">
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
           Admin Dashboard
         </h1>
       </header>
 
       {/* Tabs */}
-      <div className="flex gap-4 border-b border-white/10 pb-4">
+      <div className="flex gap-2 overflow-x-auto border-b border-white/10 pb-4 hide-scrollbar">
         <button
           onClick={() => setActiveTab('students')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${activeTab === 'students' ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white'}`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'students' ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white'}`}
         >
           <UserCog size={20} />
-          Students & Payments
+          Students
+        </button>
+        <button
+          onClick={() => setActiveTab('payments')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'payments' ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white'}`}
+        >
+          <ReceiptText size={20} />
+          Payments
         </button>
         <button
           onClick={() => setActiveTab('collections')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${activeTab === 'collections' ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white'}`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${activeTab === 'collections' ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white'}`}
         >
-          <ReceiptText size={20} />
+          <Layers size={20} />
           Collections
         </button>
       </div>
 
-      {activeTab === 'students' && (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Content */}
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+        {/* STUDENTS TAB */}
+        {activeTab === 'students' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Upload Section */}
             <div className="lg:col-span-1">
               <ExcelUploader onUploadSuccess={fetchData} />
             </div>
-
-            {/* Quick Payment Management */}
             <div className="lg:col-span-2 space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold">Manage Payments</h3>
-                <div className="flex gap-2">
-                  <select
-                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 outline-none text-sm"
-                    value={filterStatus}
-                    onChange={e => setFilterStatus(e.target.value)}
-                  >
-                    <option value="all" className="text-black">All</option>
-                    <option value="paid" className="text-black">Paid</option>
-                    <option value="pending" className="text-black">Pending</option>
-                  </select>
-
-                  <select
-                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 outline-none text-sm"
-                    value={selectedCollection || ''}
-                    onChange={e => setSelectedCollection(e.target.value)}
-                  >
-                    {collections.map(c => (
-                      <option key={c._id} value={c._id} className="text-black">
-                        {c.title}
-                      </option>
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-semibold">Student List</h3>
+                <button
+                  onClick={handleExport}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-sm transition-colors"
+                >
+                  <Download size={16} /> Export List
+                </button>
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={16} />
+                <input
+                  type="text"
+                  placeholder="Search by name or register no..."
+                  className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 outline-none focus:border-white/30 transition-colors text-sm"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden max-h-[500px] overflow-y-auto custom-scrollbar">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-white/5 text-white/60 sticky top-0 backdrop-blur-md z-10">
+                    <tr>
+                      <th className="px-4 py-3">Reg No</th>
+                      <th className="px-4 py-3">Name</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredStudents.map(s => (
+                      <tr key={s._id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-4 py-3 font-mono text-white/70">{s.registerNumber}</td>
+                        <td className="px-4 py-3 font-medium">{s.name}</td>
+                      </tr>
                     ))}
-                  </select>
-                </div>
+                    {filteredStudents.length === 0 && (
+                      <tr><td colSpan="2" className="text-center py-8 text-white/40">No students found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PAYMENTS TAB */}
+        {activeTab === 'payments' && (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row justify-between gap-4 glass p-4 rounded-xl items-center">
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar">
+                {collections.map(c => (
+                  <button
+                    key={c._id}
+                    onClick={() => setSelectedCollection(c._id)}
+                    className={`
+                                whitespace-nowrap px-4 py-1.5 rounded-lg transition-all text-sm font-medium border
+                                ${selectedCollection === c._id
+                        ? 'bg-purple-500/20 border-purple-500/50 text-purple-200'
+                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'}
+                            `}
+                  >
+                    {c.title}
+                  </button>
+                ))}
               </div>
 
+              <div className="flex gap-2 w-full md:w-auto">
+                <select
+                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 outline-none text-sm text-white flex-1"
+                  value={filterStatus}
+                  onChange={e => setFilterStatus(e.target.value)}
+                >
+                  <option value="all" className="bg-slate-900">All Status</option>
+                  <option value="paid" className="bg-slate-900">Paid</option>
+                  <option value="pending" className="bg-slate-900">Pending</option>
+                </select>
+                <button
+                  onClick={handleExport}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-sm transition-colors whitespace-nowrap"
+                >
+                  <Download size={16} /> Export
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {loading ? (
-                <Skeleton className="h-64 w-full" />
+                Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                  {filteredStudents.map(student => (
-                    <StudentCard
-                      key={student._id}
-                      student={student}
-                      collectionId={selectedCollection}
-                      isAdmin={true}
-                      onPaymentUpdate={handlePaymentUpdate}
-                    />
-                  ))}
-                </div>
+                filteredStudents.map(student => (
+                  <StudentCard
+                    key={student._id}
+                    student={student}
+                    collectionId={selectedCollection}
+                    isAdmin={true}
+                    onPaymentUpdate={handlePaymentUpdate}
+                  />
+                ))
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {activeTab === 'collections' && (
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+        {/* COLLECTIONS TAB */}
+        {activeTab === 'collections' && (
           <CollectionManager collections={collections} onUpdate={fetchData} />
-        </div>
-      )}
+        )}
+
+      </div>
     </div>
   );
 }
