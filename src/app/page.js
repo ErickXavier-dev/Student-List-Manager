@@ -51,19 +51,42 @@ export default function Home() {
 
     if (!selectedCollection) return matchesSearch;
 
-    const isPaid = s.payments?.[selectedCollection];
-    const matchesFilter = filterStatus === 'all'
-      ? true
-      : filterStatus === 'paid' ? isPaid : !isPaid;
+    let status = s.payments?.[selectedCollection];
+    if (status === true) status = 'PAID';
+    if (status === false || status === undefined || status === null) status = 'PENDING';
 
-    return matchesSearch && matchesFilter;
+    if (filterStatus === 'all') return matchesSearch && status !== 'NA';
+    if (filterStatus === 'paid') return matchesSearch && status === 'PAID';
+    if (filterStatus === 'pending') return matchesSearch && status === 'PENDING';
+    if (filterStatus === 'na') return matchesSearch && status === 'NA';
+
+    return matchesSearch;
   });
 
-  const paidCount = students.filter(s => // Calculate stats based on ALL students for this collection, not filtered
-    selectedCollection && s.payments?.[selectedCollection]
-  ).length;
+  const getStats = () => {
+    if (!selectedCollection) return { paid: 0, total: 0, pending: 0, amount: 0 };
 
-  const totalAmount = paidCount * (currentCollection?.amount || 0);
+    // Calculate based on ALL students (excluding NA)
+    const applicableStudents = students.filter(s => {
+      const status = s.payments?.[selectedCollection];
+      return status !== 'NA';
+    });
+
+    const paidStudents = applicableStudents.filter(s => {
+      let status = s.payments?.[selectedCollection];
+      if (status === true) return true;
+      return status === 'PAID';
+    });
+
+    return {
+      paid: paidStudents.length,
+      total: applicableStudents.length,
+      pending: applicableStudents.length - paidStudents.length,
+      amount: paidStudents.length * (currentCollection?.amount || 0)
+    };
+  };
+
+  const stats = getStats();
 
   return (
     <div className="space-y-8">
@@ -109,6 +132,7 @@ export default function Home() {
             <option value="all" className="bg-slate-900 text-white">All Students</option>
             <option value="paid" className="bg-slate-900 text-white">Paid Only</option>
             <option value="pending" className="bg-slate-900 text-white">Pending Only</option>
+            <option value="na" className="bg-slate-900 text-white">Not Applicable</option>
           </select>
 
           <div className="relative flex-1 md:w-64">
@@ -132,7 +156,7 @@ export default function Home() {
             </div>
             <div>
               <p className="text-sm text-white/60">Total Collected</p>
-              <p className="text-xl font-bold">₹ {totalAmount}</p>
+              <p className="text-xl font-bold">₹ {stats.amount}</p>
             </div>
           </GlassCard>
           <GlassCard className="flex items-center gap-4">
@@ -141,7 +165,7 @@ export default function Home() {
             </div>
             <div>
               <p className="text-sm text-white/60">Paid Students</p>
-              <p className="text-xl font-bold">{paidCount} <span className="text-sm text-white/40 font-normal">/ {students.length}</span></p>
+              <p className="text-xl font-bold">{stats.paid} <span className="text-sm text-white/40 font-normal">/ {stats.total}</span></p>
             </div>
           </GlassCard>
           <GlassCard className="flex items-center gap-4">
@@ -150,7 +174,7 @@ export default function Home() {
             </div>
             <div>
               <p className="text-sm text-white/60">Pending</p>
-              <p className="text-xl font-bold">{students.length - paidCount}</p>
+              <p className="text-xl font-bold">{stats.pending}</p>
             </div>
           </GlassCard>
         </div>

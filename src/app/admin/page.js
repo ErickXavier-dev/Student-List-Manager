@@ -165,9 +165,17 @@ export default function AdminPage() {
       if (activeTab === 'students') return true; // No payment filter in Students tab
 
       if (!selectedCollection) return true;
-      if (filterStatus === 'all') return true;
-      const isPaid = s.payments?.[selectedCollection];
-      return filterStatus === 'paid' ? isPaid : !isPaid;
+
+      let status = s.payments?.[selectedCollection];
+      if (status === true) status = 'PAID';
+      if (status === false || status === undefined || status === null) status = 'PENDING';
+
+      if (filterStatus === 'all') return status !== 'NA';
+      if (filterStatus === 'paid') return status === 'PAID';
+      if (filterStatus === 'pending') return status === 'PENDING';
+      if (filterStatus === 'na') return status === 'NA';
+
+      return true;
     });
   };
 
@@ -184,13 +192,20 @@ export default function AdminPage() {
       if (activeTab !== 'students') {
         if (activeTab === 'payments' && selectedCollection) {
           const col = collections.find(c => c._id === selectedCollection);
+          let status = s.payments?.[selectedCollection];
+          if (status === true) status = 'PAID';
+          if (!status && status !== 'NA') status = 'PENDING';
+
           base["Collection"] = col?.title;
           base["Amount"] = col?.amount;
-          base["Status"] = s.payments?.[selectedCollection] ? "Paid" : "Pending";
+          base["Status"] = status || "PENDING";
         } else {
           // Export all payments in columns if needed (e.g. detailed view, though usually students tab is basic list)
           collections.forEach(c => {
-            base[c.title] = s.payments?.[c._id] ? "Paid" : "Pending";
+            let status = s.payments?.[c._id];
+            if (status === true) status = 'PAID';
+            if (!status && status !== 'NA') status = 'PENDING';
+            base[c.title] = status || 'PENDING';
           });
         }
       }
@@ -331,9 +346,10 @@ export default function AdminPage() {
                   value={filterStatus}
                   onChange={e => setFilterStatus(e.target.value)}
                 >
-                  <option value="all" className="bg-slate-900">All Status</option>
+                  <option value="all" className="bg-slate-900">All Students</option>
                   <option value="paid" className="bg-slate-900">Paid</option>
                   <option value="pending" className="bg-slate-900">Pending</option>
+                  <option value="na" className="bg-slate-900">Not Applicable</option>
                 </select>
                 <button
                   onClick={handleExport}

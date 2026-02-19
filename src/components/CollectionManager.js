@@ -1,14 +1,25 @@
-'use client';
 import { useState } from 'react';
 import GlassCard from './ui/GlassCard';
 import ConfirmModal from './ui/ConfirmModal';
-import { Plus, Trash2, Loader2, IndianRupee } from 'lucide-react';
+import EditCollectionModal from './ui/EditCollectionModal';
+import CollectionApplicabilityModal from './ui/CollectionApplicabilityModal';
+import { Plus, Trash2, Loader2, IndianRupee, Pencil, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CollectionManager({ collections, onUpdate }) {
   const [formData, setFormData] = useState({ title: '', amount: '' });
   const [loading, setLoading] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
+  const [editModal, setEditModal] = useState({ isOpen: false, collection: null });
+  const [applicabilityModal, setApplicabilityModal] = useState({ isOpen: false, collection: null });
+
+  const handleEditClick = (col) => {
+    setEditModal({ isOpen: true, collection: col });
+  };
+
+  const handleManageClick = (col) => {
+    setApplicabilityModal({ isOpen: true, collection: col });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,6 +63,25 @@ export default function CollectionManager({ collections, onUpdate }) {
     }
   };
 
+  const handleUpdateCollection = async (id, title, amount) => {
+    try {
+      const res = await fetch('/api/collections', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, title, amount }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update collection');
+
+      const updatedCol = await res.json();
+      toast.success('Collection Updated');
+      setEditModal({ isOpen: false, collection: null });
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <GlassCard>
@@ -90,13 +120,30 @@ export default function CollectionManager({ collections, onUpdate }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {collections.map(col => (
           <GlassCard key={col._id} className="relative group">
-            <button
-              onClick={() => setDeleteModal({ isOpen: true, id: col._id })}
-              className="absolute top-2 right-2 p-2 rounded-full bg-rose-500/10 text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500/20"
-            >
-              <Trash2 size={16} />
-            </button>
-            <h4 className="font-medium text-lg text-white/90">{col.title}</h4>
+            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => handleManageClick(col)}
+                className="p-2 rounded-full bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors"
+                title="Manage Applicability"
+              >
+                <Users size={16} />
+              </button>
+              <button
+                onClick={() => handleEditClick(col)}
+                className="p-2 rounded-full bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                title="Edit Details"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                onClick={() => setDeleteModal({ isOpen: true, id: col._id })}
+                className="p-2 rounded-full bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors"
+                title="Delete Collection"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+            <h4 className="font-medium text-lg text-white/90 pr-20">{col.title}</h4>
             <div className="flex items-center gap-1 text-emerald-400 mt-1">
               <IndianRupee size={14} />
               <span className="font-bold text-xl">{col.amount}</span>
@@ -117,6 +164,25 @@ export default function CollectionManager({ collections, onUpdate }) {
         isDanger={true}
         confirmText="Delete"
       />
+
+      {/* Edit Modal */}
+      {editModal.isOpen && (
+        <EditCollectionModal
+          isOpen={editModal.isOpen}
+          onClose={() => setEditModal({ isOpen: false, collection: null })}
+          collection={editModal.collection}
+          onUpdate={handleUpdateCollection}
+        />
+      )}
+
+      {/* Applicability Modal */}
+      {applicabilityModal.isOpen && (
+        <CollectionApplicabilityModal
+          isOpen={applicabilityModal.isOpen}
+          onClose={() => setApplicabilityModal({ isOpen: false, collection: null })}
+          collection={applicabilityModal.collection}
+        />
+      )}
     </div>
   );
 }

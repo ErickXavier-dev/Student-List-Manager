@@ -15,7 +15,7 @@ export async function GET() {
 export async function PATCH(request) {
   await dbConnect();
   try {
-    const { studentId, collectionId, hasPaid } = await request.json();
+    const { studentId, collectionId, status } = await request.json();
 
     if (!studentId || !collectionId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -26,8 +26,22 @@ export async function PATCH(request) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
 
+    // Verify student.payments is initialized
+    if (!student.payments) {
+      student.payments = new Map();
+    }
+
     // Update the Map
-    student.payments.set(collectionId, hasPaid);
+    // Status can be 'PAID', 'PENDING', 'NA' (or null to remove?)
+    if (status) {
+      student.payments.set(collectionId, status);
+    } else {
+      if (student.payments.has(collectionId)) {
+        student.payments.delete(collectionId);
+      }
+    }
+
+    student.markModified('payments'); // Ensure Mongoose detects the change
     await student.save();
 
     return NextResponse.json({ success: true, student });

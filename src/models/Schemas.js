@@ -10,10 +10,10 @@ const StudentSchema = new mongoose.Schema({
     required: [true, 'Please provide a register number.'],
     unique: true,
   },
-  // Map of Collection ID -> Boolean (Paid/Unpaid)
+  // Map of Collection ID -> String (PAID/NA/PENDING)
   payments: {
     type: Map,
-    of: Boolean,
+    of: String,
     default: {}
   }
 }, { timestamps: true });

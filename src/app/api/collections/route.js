@@ -32,6 +32,31 @@ export async function POST(request) {
   }
 }
 
+export async function PUT(request) {
+  await dbConnect();
+  try {
+    const { id, title, amount } = await request.json();
+
+    if (!id || !title || !amount) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const updatedCollection = await Collection.findByIdAndUpdate(
+      id,
+      { title, amount: Number(amount) },
+      { new: true }
+    );
+
+    if (!updatedCollection) {
+      return NextResponse.json({ error: 'Collection not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(updatedCollection);
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(request) {
   await dbConnect();
   try {
