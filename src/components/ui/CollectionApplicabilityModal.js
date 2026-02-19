@@ -35,8 +35,11 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
     setUpdating(student._id);
 
     const isNA = student.notApplicable?.[collection._id];
-    // Toggle: If NA -> APPLICABLE. If not NA -> NA.
-    const newStatus = isNA ? 'APPLICABLE' : 'NA';
+
+    // Prevent toggling if already NA
+    if (isNA) return;
+
+    const newStatus = 'NA';
 
     try {
       const res = await fetch('/api/students', {

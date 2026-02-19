@@ -29,7 +29,6 @@ export default function LoginPage() {
 
       toast.success('Logged in successfully');
       router.push('/admin');
-      router.refresh(); // Refresh to update middleware state detection if needed
     } catch (error) {
       toast.error(error.message);
     } finally {
