@@ -51,14 +51,20 @@ export default function Home() {
 
     if (!selectedCollection) return matchesSearch;
 
+    const isNA = s.notApplicable?.[selectedCollection];
     let status = s.payments?.[selectedCollection];
+
+    // Backward compatibility
     if (status === true) status = 'PAID';
     if (status === false || status === undefined || status === null) status = 'PENDING';
 
-    if (filterStatus === 'all') return matchesSearch && status !== 'NA';
-    if (filterStatus === 'paid') return matchesSearch && status === 'PAID';
-    if (filterStatus === 'pending') return matchesSearch && status === 'PENDING';
-    if (filterStatus === 'na') return matchesSearch && status === 'NA';
+    // Effective status Logic
+    const effectiveStatus = isNA ? 'NA' : status;
+
+    if (filterStatus === 'all') return matchesSearch && effectiveStatus !== 'NA'; // Hide NA by default
+    if (filterStatus === 'paid') return matchesSearch && effectiveStatus === 'PAID';
+    if (filterStatus === 'pending') return matchesSearch && effectiveStatus === 'PENDING';
+    if (filterStatus === 'na') return matchesSearch && effectiveStatus === 'NA';
 
     return matchesSearch;
   });
@@ -68,8 +74,7 @@ export default function Home() {
 
     // Calculate based on ALL students (excluding NA)
     const applicableStudents = students.filter(s => {
-      const status = s.payments?.[selectedCollection];
-      return status !== 'NA';
+      return !s.notApplicable?.[selectedCollection];
     });
 
     const paidStudents = applicableStudents.filter(s => {

@@ -180,7 +180,7 @@ export default function AdminPage() {
 
       const effectiveStatus = isNA ? 'NA' : status;
 
-      if (filterStatus === 'all') return true; // Show everyone
+      if (filterStatus === 'all') return effectiveStatus !== 'NA'; // Hide NA by default
       if (filterStatus === 'paid') return effectiveStatus === 'PAID';
       if (filterStatus === 'pending') return effectiveStatus === 'PENDING';
       if (filterStatus === 'na') return effectiveStatus === 'NA';
