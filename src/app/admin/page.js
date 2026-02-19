@@ -166,14 +166,24 @@ export default function AdminPage() {
 
       if (!selectedCollection) return true;
 
+      const isNA = s.notApplicable?.[selectedCollection];
       let status = s.payments?.[selectedCollection];
+
+      // Backward compat
       if (status === true) status = 'PAID';
       if (status === false || status === undefined || status === null) status = 'PENDING';
 
-      if (filterStatus === 'all') return status !== 'NA';
-      if (filterStatus === 'paid') return status === 'PAID';
-      if (filterStatus === 'pending') return status === 'PENDING';
-      if (filterStatus === 'na') return status === 'NA';
+      // NA overrides everything for display/filtering usually, or we treat it as a distinct state
+      // Logic:
+      // if NA -> Status is NA
+      // else -> Status is PAID or PENDING
+
+      const effectiveStatus = isNA ? 'NA' : status;
+
+      if (filterStatus === 'all') return true; // Show everyone
+      if (filterStatus === 'paid') return effectiveStatus === 'PAID';
+      if (filterStatus === 'pending') return effectiveStatus === 'PENDING';
+      if (filterStatus === 'na') return effectiveStatus === 'NA';
 
       return true;
     });
@@ -192,20 +202,26 @@ export default function AdminPage() {
       if (activeTab !== 'students') {
         if (activeTab === 'payments' && selectedCollection) {
           const col = collections.find(c => c._id === selectedCollection);
+
+          const isNA = s.notApplicable?.[selectedCollection];
           let status = s.payments?.[selectedCollection];
           if (status === true) status = 'PAID';
-          if (!status && status !== 'NA') status = 'PENDING';
+          if (!status) status = 'PENDING';
+
+          const effectiveStatus = isNA ? 'N/A' : (status || 'PENDING');
 
           base["Collection"] = col?.title;
           base["Amount"] = col?.amount;
-          base["Status"] = status || "PENDING";
+          base["Status"] = effectiveStatus;
         } else {
-          // Export all payments in columns if needed (e.g. detailed view, though usually students tab is basic list)
+          // Export all payments
           collections.forEach(c => {
+            const isNA = s.notApplicable?.[c._id];
             let status = s.payments?.[c._id];
             if (status === true) status = 'PAID';
-            if (!status && status !== 'NA') status = 'PENDING';
-            base[c.title] = status || 'PENDING';
+            if (!status) status = 'PENDING';
+
+            base[c.title] = isNA ? 'N/A' : (status || 'PENDING');
           });
         }
       }

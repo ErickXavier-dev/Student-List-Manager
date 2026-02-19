@@ -9,12 +9,15 @@ import { toast } from 'sonner';
 export default function StudentCard({ student, collectionId, isAdmin, onPaymentUpdate }) {
   const [isLoading, setIsLoading] = useState(false);
 
-  // Normalize status. Handle boolean for backward compatibility.
-  let rawStatus = collectionId ? student.payments?.[collectionId] : undefined;
-  if (rawStatus === true) rawStatus = 'PAID';
-  if (rawStatus === false) rawStatus = 'PENDING';
+  // Normalize status. Check notApplicable first.
+  let isNA = collectionId ? student.notApplicable?.[collectionId] : false;
+  let paymentStatus = collectionId ? student.payments?.[collectionId] : undefined;
 
-  const status = rawStatus || 'PENDING'; // 'PAID', 'NA', 'PENDING'
+  // Backward compatibility: if paymentStatus is boolean
+  if (paymentStatus === true) paymentStatus = 'PAID';
+  if (paymentStatus === false) paymentStatus = 'PENDING';
+
+  const status = isNA ? 'NA' : (paymentStatus || 'PENDING'); // 'PAID', 'NA', 'PENDING'
 
   const handleToggle = async () => {
     if (!isAdmin || !collectionId || isLoading) return;
@@ -25,7 +28,7 @@ export default function StudentCard({ student, collectionId, isAdmin, onPaymentU
       let newStatus;
       if (status === 'PENDING') newStatus = 'PAID';
       else if (status === 'PAID') newStatus = 'NA';
-      else newStatus = null; // Remove from map = PENDING
+      else newStatus = 'APPLICABLE'; // Was NA, now make Applicable (which defaults to PENDING/UNPAID state visually if no payment exists)
 
       const res = await fetch('/api/students', {
         method: 'PATCH',

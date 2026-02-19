@@ -34,13 +34,9 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
     if (updating) return;
     setUpdating(student._id);
 
-    const currentStatus = student.payments?.[collection._id];
-    // If currently NA, switch to PENDING (null/undefined in map).
-    // If currently PAID or PENDING, switch to NA.
-    // Ideally, if they are PAID, making them NA is weird but allowed.
-    // If they are NA, making them Applicable (PENDING) allows them to pay.
-
-    const newStatus = currentStatus === 'NA' ? null : 'NA'; // Toggle between NA and PENDING
+    const isNA = student.notApplicable?.[collection._id];
+    // Toggle: If NA -> APPLICABLE. If not NA -> NA.
+    const newStatus = isNA ? 'APPLICABLE' : 'NA';
 
     try {
       const res = await fetch('/api/students', {
@@ -58,12 +54,15 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
       // Update local state
       setStudents(prev => prev.map(s => {
         if (s._id === student._id) {
-          // Reconstruct payments map-like object for local state
-          const newPayments = { ...s.payments };
-          if (newStatus) newPayments[collection._id] = newStatus;
-          else delete newPayments[collection._id];
+          // Update notApplicable map
+          const newNotApplicable = { ...s.notApplicable };
+          if (newStatus === 'NA') {
+            newNotApplicable[collection._id] = true;
+          } else {
+            delete newNotApplicable[collection._id];
+          }
 
-          return { ...s, payments: newPayments };
+          return { ...s, notApplicable: newNotApplicable };
         }
         return s;
       }));
@@ -125,9 +124,12 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
                 <p className="text-center text-white/40 py-8">No students found</p>
               ) : (
                 filteredStudents.map(student => {
-                  const status = student.payments?.[collection._id];
-                  const isNA = status === 'NA';
-                  const isPaid = status === 'PAID';
+                  const isNA = student.notApplicable?.[collection._id];
+                  // Payment status logic
+                  let paymentStatus = student.payments?.[collection._id];
+                  if (paymentStatus === true) paymentStatus = 'PAID';
+
+                  const isPaid = paymentStatus === 'PAID';
 
                   return (
                     <div key={student._id} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/10 transition-colors">

@@ -15,6 +15,12 @@ const StudentSchema = new mongoose.Schema({
     type: Map,
     of: String,
     default: {}
+  },
+  // Map of Collection ID -> Boolean (true if NA)
+  notApplicable: {
+    type: Map,
+    of: Boolean,
+    default: {}
   }
 }, { timestamps: true });
 
