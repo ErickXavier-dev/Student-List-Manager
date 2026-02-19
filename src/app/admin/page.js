@@ -180,16 +180,19 @@ export default function AdminPage() {
         "Name": s.name,
       };
 
-      if (activeTab === 'payments' && selectedCollection) {
-        const col = collections.find(c => c._id === selectedCollection);
-        base["Collection"] = col?.title;
-        base["Amount"] = col?.amount;
-        base["Status"] = s.payments?.[selectedCollection] ? "Paid" : "Pending";
-      } else {
-        // Export all payments in columns if in Students tab
-        collections.forEach(c => {
-          base[c.title] = s.payments?.[c._id] ? "Paid" : "Pending";
-        });
+      // Only add payment details if NOT in the students tab
+      if (activeTab !== 'students') {
+        if (activeTab === 'payments' && selectedCollection) {
+          const col = collections.find(c => c._id === selectedCollection);
+          base["Collection"] = col?.title;
+          base["Amount"] = col?.amount;
+          base["Status"] = s.payments?.[selectedCollection] ? "Paid" : "Pending";
+        } else {
+          // Export all payments in columns if needed (e.g. detailed view, though usually students tab is basic list)
+          collections.forEach(c => {
+            base[c.title] = s.payments?.[c._id] ? "Paid" : "Pending";
+          });
+        }
       }
       return base;
     });
@@ -293,8 +296,8 @@ export default function AdminPage() {
         {/* PAYMENTS TAB */}
         {activeTab === 'payments' && (
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between gap-4 glass p-4 rounded-xl items-center">
-              <div className="flex gap-2 w-full md:w-auto overflow-x-auto hide-scrollbar">
+            <div className="flex flex-col xl:flex-row justify-between gap-4 glass p-4 rounded-xl items-center">
+              <div className="flex gap-2 w-full xl:w-auto overflow-x-auto hide-scrollbar">
                 {collections.map(c => (
                   <button
                     key={c._id}
@@ -311,9 +314,20 @@ export default function AdminPage() {
                 ))}
               </div>
 
-              <div className="flex gap-2 w-full md:w-auto">
+              <div className="flex flex-col sm:flex-row gap-2 w-full xl:w-auto items-center">
+                <div className="relative w-full sm:w-auto">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={16} />
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="w-full sm:w-48 bg-white/10 border border-white/20 rounded-lg pl-9 pr-4 py-1.5 outline-none focus:border-white/30 transition-colors text-sm"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                </div>
+
                 <select
-                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 outline-none text-sm text-white flex-1"
+                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 outline-none text-sm text-white w-full sm:w-auto"
                   value={filterStatus}
                   onChange={e => setFilterStatus(e.target.value)}
                 >
@@ -323,7 +337,7 @@ export default function AdminPage() {
                 </select>
                 <button
                   onClick={handleExport}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-sm transition-colors whitespace-nowrap"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-sm transition-colors whitespace-nowrap w-full sm:w-auto justify-center"
                 >
                   <Download size={16} /> Export
                 </button>
