@@ -40,6 +40,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(fetchData, 10000); // Refresh every 10s
+    return () => clearInterval(interval);
   }, []);
 
   const handlePaymentUpdate = (studentId, newState) => {

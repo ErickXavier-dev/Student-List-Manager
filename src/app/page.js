@@ -14,8 +14,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'paid', 'pending'
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [resStudents, resCollections] = await Promise.all([
         fetch('/api/students'),
@@ -32,12 +32,14 @@ export default function Home() {
     } catch (err) {
       console.error(err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(() => fetchData(false), 10000); // Refresh every 10s
+    return () => clearInterval(interval);
   }, []);
 
   // Derived state
