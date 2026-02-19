@@ -1,12 +1,14 @@
 'use client';
 import { useState } from 'react';
 import GlassCard from './ui/GlassCard';
+import ConfirmModal from './ui/ConfirmModal';
 import { Plus, Trash2, Loader2, IndianRupee } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function CollectionManager({ collections, onUpdate }) {
   const [formData, setFormData] = useState({ title: '', amount: '' });
   const [loading, setLoading] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,8 +35,11 @@ export default function CollectionManager({ collections, onUpdate }) {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure? This will delete the collection record.')) return;
+  const confirmDelete = async () => {
+    const id = deleteModal.id;
+    if (!id) return;
+
+    setDeleteModal({ isOpen: false, id: null });
 
     try {
       const res = await fetch(`/api/collections?id=${id}`, { method: 'DELETE' });
@@ -86,7 +91,7 @@ export default function CollectionManager({ collections, onUpdate }) {
         {collections.map(col => (
           <GlassCard key={col._id} className="relative group">
             <button
-              onClick={() => handleDelete(col._id)}
+              onClick={() => setDeleteModal({ isOpen: true, id: col._id })}
               className="absolute top-2 right-2 p-2 rounded-full bg-rose-500/10 text-rose-400 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-500/20"
             >
               <Trash2 size={16} />
@@ -102,6 +107,16 @@ export default function CollectionManager({ collections, onUpdate }) {
           </GlassCard>
         ))}
       </div>
+
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, id: null })}
+        onConfirm={confirmDelete}
+        title="Delete Collection"
+        message="Are you sure you want to delete this collection? This action cannot be undone."
+        isDanger={true}
+        confirmText="Delete"
+      />
     </div>
   );
 }

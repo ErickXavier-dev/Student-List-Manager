@@ -5,11 +5,12 @@ import ExcelUploader from '@/components/ExcelUploader';
 import CollectionManager from '@/components/CollectionManager';
 import StudentCard from '@/components/StudentCard';
 import { Skeleton } from '@/components/ui/Skeleton';
+import ConfirmModal from '@/components/ui/ConfirmModal';
 import { UserCog, ReceiptText, Layers, Download, Search, Edit2, Trash2, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
-const StudentRow = ({ student, fetchData }) => {
+const StudentRow = ({ student, fetchData, onDeleteClick }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ name: student.name, registerNumber: student.registerNumber });
   const [isSaving, setIsSaving] = useState(false);
@@ -32,22 +33,6 @@ const StudentRow = ({ student, fetchData }) => {
       toast.error(error.message);
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this student?')) return;
-
-    try {
-      const res = await fetch(`/api/students/${student._id}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete');
-
-      toast.success('Student deleted');
-      fetchData();
-    } catch (error) {
-      toast.error(error.message);
     }
   };
 
@@ -94,7 +79,7 @@ const StudentRow = ({ student, fetchData }) => {
           <button onClick={() => setIsEditing(true)} className="p-1 hover:bg-blue-500/20 text-blue-400 rounded transition-colors">
             <Edit2 size={16} />
           </button>
-          <button onClick={handleDelete} className="p-1 hover:bg-red-500/20 text-red-400 rounded transition-colors">
+          <button onClick={() => onDeleteClick(student)} className="p-1 hover:bg-red-500/20 text-red-400 rounded transition-colors">
             <Trash2 size={16} />
           </button>
         </div>
@@ -111,6 +96,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
   const [search, setSearch] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, student: null });
 
   const fetchData = async () => {
     try {
@@ -148,6 +134,25 @@ export default function AdminPage() {
       }
       return s;
     }));
+  };
+
+  const confirmDelete = async () => {
+    const student = deleteModal.student;
+    if (!student) return;
+
+    setDeleteModal({ isOpen: false, student: null });
+
+    try {
+      const res = await fetch(`/api/students/${student._id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete');
+
+      toast.success('Student deleted');
+      fetchData();
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   // Filter students based on status and search
@@ -272,6 +277,7 @@ export default function AdminPage() {
                         key={s._id}
                         student={s}
                         fetchData={fetchData}
+                        onDeleteClick={(student) => setDeleteModal({ isOpen: true, student })}
                       />
                     ))}
                     {filteredStudents.length === 0 && (
@@ -348,6 +354,16 @@ export default function AdminPage() {
         )}
 
       </div>
+
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, student: null })}
+        onConfirm={confirmDelete}
+        title="Delete Student"
+        message={`Are you sure you want to delete ${deleteModal.student?.name}? This action cannot be undone.`}
+        isDanger={true}
+        confirmText="Delete"
+      />
     </div>
   );
 }
