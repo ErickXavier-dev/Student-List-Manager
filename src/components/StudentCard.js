@@ -24,11 +24,10 @@ export default function StudentCard({ student, collectionId, isAdmin, onPaymentU
 
     setIsLoading(true);
     try {
-      // Cycle: PENDING -> PAID -> NA -> PENDING
+      // Cycle: PENDING/NA -> PAID -> PENDING
       let newStatus;
-      if (status === 'PENDING') newStatus = 'PAID';
-      else if (status === 'PAID') newStatus = 'NA';
-      else newStatus = 'APPLICABLE'; // Was NA, now make Applicable (which defaults to PENDING/UNPAID state visually if no payment exists)
+      if (status === 'PAID') newStatus = null; // Unpaid
+      else newStatus = 'PAID'; // Paid
 
       const res = await fetch('/api/students', {
         method: 'PATCH',
