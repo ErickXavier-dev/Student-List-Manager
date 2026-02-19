@@ -76,10 +76,41 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
     }
   };
 
+  const handleBulkAction = async (action) => {
+    if (updating) return;
+    setUpdating('bulk'); // Generic updating state
+
+    try {
+      const res = await fetch('/api/collections/bulk', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          collectionId: collection._id,
+          action
+        }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update');
+      const data = await res.json();
+      toast.success(data.message);
+
+      // Refresh students
+      await fetchStudents();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   const filteredStudents = students.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.registerNumber.toString().includes(search)
   );
+
+  // Check if ALL filtered students are NA (or should we check ALL students? usually ALL students in context)
+  // Logic: "when everyone is selected as no appliable" -> implies all students in the collection.
+  const allNA = students.length > 0 && students.every(s => s.notApplicable?.[collection._id]);
 
   return (
     <AnimatePresence>
@@ -92,14 +123,42 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
             className="bg-[#1a1f2e] border border-white/10 rounded-2xl w-full max-w-2xl shadow-xl flex flex-col max-h-[80vh]"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-white/10">
-              <div>
-                <h2 className="text-xl font-bold text-white">Manage Applicability</h2>
-                <p className="text-sm text-white/60">For {collection?.title}</p>
+            <div className="flex flex-col gap-4 p-6 border-b border-white/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-white">Manage Applicability</h2>
+                  <p className="text-sm text-white/60">For {collection?.title}</p>
+                </div>
+                <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white">
+                  <X size={20} />
+                </button>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/60 hover:text-white">
-                <X size={20} />
-              </button>
+
+              {/* Bulk Actions */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleBulkAction(allNA ? 'MARK_ALL_APPLICABLE' : 'MARK_EVERYONE_NA')}
+                  disabled={loading || updating}
+                  className={`
+                    flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors border
+                    ${allNA
+                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20'
+                      : 'bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/20'}
+                  `}
+                >
+                  {allNA ? 'Mark All Applicable' : 'Mark Everyone NA'}
+                </button>
+
+                {!allNA && (
+                  <button
+                    onClick={() => handleBulkAction('MARK_ALL_NA')} // This is "Mark Unpaid NA"
+                    disabled={loading || updating}
+                    className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors border bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                  >
+                    Mark Unpaid as NA
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Search */}

@@ -24,6 +24,17 @@ export async function PUT(request) {
 
       return NextResponse.json({ success: true, message: 'All unpaid students marked as NA' });
 
+    } else if (action === 'MARK_EVERYONE_NA') {
+      const naKey = `notApplicable.${collectionId}`;
+
+      // Update ALL students
+      await Student.updateMany(
+        {},
+        { $set: { [naKey]: true } }
+      );
+
+      return NextResponse.json({ success: true, message: 'All students marked as NA' });
+
     } else if (action === 'MARK_ALL_APPLICABLE') {
       // Revert 'NA' (remove from notApplicable map)
       const naKey = `notApplicable.${collectionId}`;
