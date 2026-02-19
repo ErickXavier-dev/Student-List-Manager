@@ -74,7 +74,7 @@ const StudentRow = ({ student, fetchData, onDeleteClick }) => {
     <tr className="hover:bg-white/5 transition-colors group">
       <td className="px-4 py-3 font-mono text-white/70">{student.registerNumber}</td>
       <td className="px-4 py-3 font-medium">{student.name}</td>
-      <td className="px-4 py-3 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+      <td className="px-4 py-3 text-right opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
         <div className="flex justify-end gap-2">
           <button onClick={() => setIsEditing(true)} className="p-1 hover:bg-blue-500/20 text-blue-400 rounded transition-colors">
             <Edit2 size={16} />
