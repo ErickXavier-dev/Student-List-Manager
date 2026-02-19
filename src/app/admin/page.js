@@ -304,7 +304,7 @@ export default function AdminPage() {
                   onChange={e => setSearch(e.target.value)}
                 />
               </div>
-              <div className="bg-white/5 rounded-xl border border-white/10 overflow-hidden max-h-[500px] overflow-y-auto custom-scrollbar">
+              <div className="bg-white/5 rounded-xl border border-white/10 overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
                 <table className="w-full text-sm text-left">
                   <thead className="bg-white/5 text-white/60 sticky top-0 backdrop-blur-md z-10">
                     <tr>
