@@ -26,9 +26,6 @@ export default function Home() {
 
       setStudents(dataStudents);
       setCollections(dataCollections);
-      if (dataCollections.length > 0 && !selectedCollection) {
-        setSelectedCollection(dataCollections[0]._id);
-      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -41,6 +38,17 @@ export default function Home() {
     const interval = setInterval(() => fetchData(false), 10000); // Refresh every 10s
     return () => clearInterval(interval);
   }, []);
+
+  // Handle initial selection and maintain validity
+  useEffect(() => {
+    if (collections.length > 0) {
+      // If nothing selected, or selected item no longer exists, select first
+      const exists = selectedCollection && collections.find(c => c._id === selectedCollection);
+      if (!selectedCollection || !exists) {
+        setSelectedCollection(collections[0]._id);
+      }
+    }
+  }, [collections, selectedCollection]);
 
   // Derived state
   const currentCollection = collections.find(c => c._id === selectedCollection);
