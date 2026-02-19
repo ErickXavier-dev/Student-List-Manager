@@ -12,6 +12,7 @@ export default function Home() {
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'paid', 'pending'
 
   const fetchData = async () => {
     setLoading(true);
@@ -42,12 +43,21 @@ export default function Home() {
   // Derived state
   const currentCollection = collections.find(c => c._id === selectedCollection);
 
-  const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.registerNumber.toString().includes(search)
-  );
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.registerNumber.toString().includes(search);
 
-  const paidCount = filteredStudents.filter(s =>
+    if (!selectedCollection) return matchesSearch;
+
+    const isPaid = s.payments?.[selectedCollection];
+    const matchesFilter = filterStatus === 'all'
+      ? true
+      : filterStatus === 'paid' ? isPaid : !isPaid;
+
+    return matchesSearch && matchesFilter;
+  });
+
+  const paidCount = students.filter(s => // Calculate stats based on ALL students for this collection, not filtered
     selectedCollection && s.payments?.[selectedCollection]
   ).length;
 
@@ -87,19 +97,30 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Search */}
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={18} />
-          <input
-            type="text"
-            placeholder="Search student..."
-            className="w-full bg-white/5 border border-white/10 rounded-full pl-10 pr-4 py-2 outline-none focus:border-white/30 transition-colors"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        {/* Search & Filter */}
+        <div className="flex gap-2 w-full md:w-auto">
+          <select
+            className="bg-white/5 border border-white/10 rounded-full px-4 py-2 outline-none focus:border-white/30 transition-colors text-white text-sm"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="all" className="bg-slate-900 text-white">All Students</option>
+            <option value="paid" className="bg-slate-900 text-white">Paid Only</option>
+            <option value="pending" className="bg-slate-900 text-white">Pending Only</option>
+          </select>
+
+          <div className="relative flex-1 md:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={18} />
+            <input
+              type="text"
+              placeholder="Search student..."
+              className="w-full bg-white/5 border border-white/10 rounded-full pl-10 pr-4 py-2 outline-none focus:border-white/30 transition-colors"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
         </div>
       </div>
-
       {/* Stats Cards */}
       {currentCollection && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

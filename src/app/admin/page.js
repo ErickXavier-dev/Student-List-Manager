@@ -14,6 +14,7 @@ export default function AdminPage() {
   const [collections, setCollections] = useState([]);
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'paid', 'pending'
 
   const fetchData = async () => {
     try {
@@ -51,6 +52,14 @@ export default function AdminPage() {
       return s;
     }));
   };
+
+  // Filter students based on status
+  const filteredStudents = students.filter(s => {
+    if (!selectedCollection) return true;
+    if (filterStatus === 'all') return true;
+    const isPaid = s.payments?.[selectedCollection];
+    return filterStatus === 'paid' ? isPaid : !isPaid;
+  });
 
   return (
     <div className="space-y-8">
@@ -92,7 +101,17 @@ export default function AdminPage() {
                 <h3 className="text-xl font-semibold">Manage Payments</h3>
                 <div className="flex gap-2">
                   <select
-                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 outline-none"
+                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 outline-none text-sm"
+                    value={filterStatus}
+                    onChange={e => setFilterStatus(e.target.value)}
+                  >
+                    <option value="all" className="text-black">All</option>
+                    <option value="paid" className="text-black">Paid</option>
+                    <option value="pending" className="text-black">Pending</option>
+                  </select>
+
+                  <select
+                    className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 outline-none text-sm"
                     value={selectedCollection || ''}
                     onChange={e => setSelectedCollection(e.target.value)}
                   >
@@ -109,7 +128,7 @@ export default function AdminPage() {
                 <Skeleton className="h-64 w-full" />
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-                  {students.map(student => (
+                  {filteredStudents.map(student => (
                     <StudentCard
                       key={student._id}
                       student={student}
