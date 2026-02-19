@@ -116,7 +116,7 @@ export default function Home() {
       {/* Controls */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
         {/* Collection Selector */}
-        <div className="w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar flex gap-2">
+        <div className="w-full md:w-auto overflow-x-auto p-4 md:p-4 hide-scrollbar flex gap-2">
           {loading ? (
             Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-10 w-32 rounded-full" />)
           ) : collections.map(col => (
@@ -124,7 +124,7 @@ export default function Home() {
               key={col._id}
               onClick={() => setSelectedCollection(col._id)}
               className={`
-                        whitespace-nowrap px-6 py-2 rounded-full transition-all text-sm font-medium border
+                        whitespace-nowrap px-6 py-2 rounded-full transition-all text-sm font-medium border overflow-hidden bg-clip-padding
                         ${selectedCollection === col._id
                   ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
                   : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'}
