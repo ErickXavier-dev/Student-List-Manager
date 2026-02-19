@@ -5,9 +5,103 @@ import ExcelUploader from '@/components/ExcelUploader';
 import CollectionManager from '@/components/CollectionManager';
 import StudentCard from '@/components/StudentCard';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { UserCog, ReceiptText, Layers, Download, Search } from 'lucide-react';
+import { UserCog, ReceiptText, Layers, Download, Search, Edit2, Trash2, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+
+const StudentRow = ({ student, fetchData }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({ name: student.name, registerNumber: student.registerNumber });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/students/${student._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editData),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update');
+
+      toast.success('Student updated');
+      setIsEditing(false);
+      fetchData();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this student?')) return;
+
+    try {
+      const res = await fetch(`/api/students/${student._id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete');
+
+      toast.success('Student deleted');
+      fetchData();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <tr className="bg-white/5 transition-colors">
+        <td className="px-4 py-3">
+          <input
+            type="text"
+            value={editData.registerNumber}
+            onChange={e => setEditData({ ...editData, registerNumber: e.target.value })}
+            className="bg-black/20 border border-white/10 rounded px-2 py-1 w-full text-white"
+            autoFocus
+          />
+        </td>
+        <td className="px-4 py-3">
+          <input
+            type="text"
+            value={editData.name}
+            onChange={e => setEditData({ ...editData, name: e.target.value })}
+            className="bg-black/20 border border-white/10 rounded px-2 py-1 w-full text-white"
+          />
+        </td>
+        <td className="px-4 py-3 text-right">
+          <div className="flex justify-end gap-2">
+            <button onClick={handleSave} disabled={isSaving} className="p-1 hover:bg-emerald-500/20 text-emerald-400 rounded transition-colors">
+              <Check size={18} />
+            </button>
+            <button onClick={() => setIsEditing(false)} className="p-1 hover:bg-red-500/20 text-red-400 rounded transition-colors">
+              <X size={18} />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr className="hover:bg-white/5 transition-colors group">
+      <td className="px-4 py-3 font-mono text-white/70">{student.registerNumber}</td>
+      <td className="px-4 py-3 font-medium">{student.name}</td>
+      <td className="px-4 py-3 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setIsEditing(true)} className="p-1 hover:bg-blue-500/20 text-blue-400 rounded transition-colors">
+            <Edit2 size={16} />
+          </button>
+          <button onClick={handleDelete} className="p-1 hover:bg-red-500/20 text-red-400 rounded transition-colors">
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+};
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState('payments'); // Default to payments as it's most used
@@ -169,17 +263,19 @@ export default function AdminPage() {
                     <tr>
                       <th className="px-4 py-3">Reg No</th>
                       <th className="px-4 py-3">Name</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {filteredStudents.map(s => (
-                      <tr key={s._id} className="hover:bg-white/5 transition-colors">
-                        <td className="px-4 py-3 font-mono text-white/70">{s.registerNumber}</td>
-                        <td className="px-4 py-3 font-medium">{s.name}</td>
-                      </tr>
+                      <StudentRow
+                        key={s._id}
+                        student={s}
+                        fetchData={fetchData}
+                      />
                     ))}
                     {filteredStudents.length === 0 && (
-                      <tr><td colSpan="2" className="text-center py-8 text-white/40">No students found</td></tr>
+                      <tr><td colSpan="3" className="text-center py-8 text-white/40">No students found</td></tr>
                     )}
                   </tbody>
                 </table>
