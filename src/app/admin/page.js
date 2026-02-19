@@ -98,7 +98,8 @@ export default function AdminPage() {
   const [search, setSearch] = useState('');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, student: null });
 
-  const fetchData = async () => {
+  const fetchData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [resStudents, resCollections] = await Promise.all([
         fetch('/api/students'),
@@ -109,22 +110,29 @@ export default function AdminPage() {
 
       setStudents(dataStudents);
       setCollections(dataCollections);
-      if (dataCollections.length > 0 && !selectedCollection) {
-        setSelectedCollection(dataCollections[0]._id);
-      }
     } catch (err) {
       console.error(err);
       toast.error("Failed to load data");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 10000);
+    const interval = setInterval(() => fetchData(false), 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Handle initial selection and maintain validity
+  useEffect(() => {
+    if (collections.length > 0) {
+      const exists = selectedCollection && collections.find(c => c._id === selectedCollection);
+      if (!selectedCollection || !exists) {
+        setSelectedCollection(collections[0]._id);
+      }
+    }
+  }, [collections, selectedCollection]);
 
   const handlePaymentUpdate = (studentId, newState) => {
     setStudents(prev => prev.map(s => {
