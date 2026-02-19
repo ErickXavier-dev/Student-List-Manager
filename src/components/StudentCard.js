@@ -20,7 +20,7 @@ export default function StudentCard({ student, collectionId, isAdmin, onPaymentU
   const status = isNA ? 'NA' : (paymentStatus || 'PENDING'); // 'PAID', 'NA', 'PENDING'
 
   const handleToggle = async () => {
-    if (!isAdmin || !collectionId || isLoading) return;
+    if (!isAdmin || !collectionId || isLoading || status === 'NA') return;
 
     setIsLoading(true);
     try {
@@ -72,7 +72,8 @@ export default function StudentCard({ student, collectionId, isAdmin, onPaymentU
     <GlassCard
       className={cn(
         "flex items-center justify-between group",
-        isAdmin && "cursor-pointer hover:bg-white/10 active:scale-[0.98]"
+        isAdmin && status !== 'NA' && "cursor-pointer hover:bg-white/10 active:scale-[0.98]",
+        isAdmin && status === 'NA' && "opacity-75"
       )}
       onClick={handleToggle}
     >

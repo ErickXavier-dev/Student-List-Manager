@@ -203,24 +203,23 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
                       <div className="flex items-center gap-3">
                         {isPaid && <span className="text-emerald-400 text-xs font-medium px-2 py-1 bg-emerald-500/10 rounded">Paid</span>}
 
-                        <button
-                          onClick={() => handleToggleNA(student)}
-                          disabled={updating === student._id}
-                          className={`
-                                flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
-                                ${isNA
-                              ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
-                              : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'}
-                            `}
-                        >
-                          {updating === student._id ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : isNA ? (
-                            <><Ban size={14} /> NA</>
-                          ) : (
-                            <><Check size={14} /> Applicable</>
-                          )}
-                        </button>
+                        {isNA ? (
+                          <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-rose-500/20 text-rose-400 cursor-not-allowed select-none">
+                            <Ban size={14} /> NA
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleNA(student)}
+                            disabled={updating === student._id}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+                          >
+                            {updating === student._id ? (
+                              <Loader2 size={14} className="animate-spin" />
+                            ) : (
+                              <><Check size={14} /> Applicable</>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
