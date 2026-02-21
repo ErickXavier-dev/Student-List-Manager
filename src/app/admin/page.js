@@ -314,16 +314,28 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {filteredStudents.map(s => (
-                      <StudentRow
-                        key={s._id}
-                        student={s}
-                        fetchData={fetchData}
-                        onDeleteClick={(student) => setDeleteModal({ isOpen: true, student })}
-                      />
-                    ))}
-                    {filteredStudents.length === 0 && (
-                      <tr><td colSpan="3" className="text-center py-8 text-white/40">No students found</td></tr>
+                    {loading ? (
+                      Array(5).fill(0).map((_, i) => (
+                        <tr key={i}>
+                          <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                          <td className="px-4 py-3"><Skeleton className="h-4 w-32" /></td>
+                          <td className="px-4 py-3 text-right"><Skeleton className="h-8 w-16 ml-auto" /></td>
+                        </tr>
+                      ))
+                    ) : (
+                      <>
+                        {filteredStudents.map(s => (
+                          <StudentRow
+                            key={s._id}
+                            student={s}
+                            fetchData={fetchData}
+                            onDeleteClick={(student) => setDeleteModal({ isOpen: true, student })}
+                          />
+                        ))}
+                        {filteredStudents.length === 0 && (
+                          <tr><td colSpan="3" className="text-center py-8 text-white/40">No students found</td></tr>
+                        )}
+                      </>
                     )}
                   </tbody>
                 </table>
@@ -404,7 +416,7 @@ export default function AdminPage() {
 
         {/* COLLECTIONS TAB */}
         {activeTab === 'collections' && (
-          <CollectionManager collections={collections} onUpdate={fetchData} />
+          <CollectionManager collections={collections} onUpdate={fetchData} loading={loading} />
         )}
 
       </div>

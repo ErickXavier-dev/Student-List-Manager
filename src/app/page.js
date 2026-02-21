@@ -161,7 +161,13 @@ export default function Home() {
         </div>
       </div>
       {/* Stats Cards */}
-      {currentCollection && (
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-[88px] w-full rounded-2xl" />
+          <Skeleton className="h-[88px] w-full rounded-2xl" />
+          <Skeleton className="h-[88px] w-full rounded-2xl" />
+        </div>
+      ) : currentCollection && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <GlassCard className="flex items-center gap-4">
             <div className="p-3 rounded-full bg-emerald-500/20 text-emerald-400">

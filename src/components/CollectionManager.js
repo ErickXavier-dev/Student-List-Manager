@@ -6,9 +6,9 @@ import CollectionApplicabilityModal from './ui/CollectionApplicabilityModal';
 import { Plus, Trash2, Loader2, IndianRupee, Pencil, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function CollectionManager({ collections, onUpdate }) {
+export default function CollectionManager({ collections, onUpdate, loading }) {
   const [formData, setFormData] = useState({ title: '', amount: '' });
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
   const [editModal, setEditModal] = useState({ isOpen: false, collection: null });
   const [applicabilityModal, setApplicabilityModal] = useState({ isOpen: false, collection: null });
@@ -25,7 +25,7 @@ export default function CollectionManager({ collections, onUpdate }) {
     e.preventDefault();
     if (!formData.title || !formData.amount) return;
 
-    setLoading(true);
+    setIsSubmitting(true);
     try {
       const res = await fetch('/api/collections', {
         method: 'POST',
@@ -42,7 +42,7 @@ export default function CollectionManager({ collections, onUpdate }) {
     } catch (error) {
       toast.error(error.message);
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -109,50 +109,56 @@ export default function CollectionManager({ collections, onUpdate }) {
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={isSubmitting}
             className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium px-6 py-2 rounded-lg transition-colors flex items-center justify-center min-w-[100px]"
           >
-            {loading ? <Loader2 className="animate-spin" /> : 'Create'}
+            {isSubmitting ? <Loader2 className="animate-spin" /> : 'Create'}
           </button>
         </form>
       </GlassCard>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {collections.map(col => (
-          <GlassCard key={col._id} className="relative group">
-            <div className="absolute top-2 right-2 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-              <button
-                onClick={() => handleManageClick(col)}
-                className="p-2 rounded-full bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors"
-                title="Manage Applicability"
-              >
-                <Users size={16} />
-              </button>
-              <button
-                onClick={() => handleEditClick(col)}
-                className="p-2 rounded-full bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
-                title="Edit Details"
-              >
-                <Pencil size={16} />
-              </button>
-              <button
-                onClick={() => setDeleteModal({ isOpen: true, id: col._id })}
-                className="p-2 rounded-full bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors"
-                title="Delete Collection"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-            <h4 className="font-medium text-lg text-white/90 pr-20">{col.title}</h4>
-            <div className="flex items-center gap-1 text-emerald-400 mt-1">
-              <IndianRupee size={14} />
-              <span className="font-bold text-xl">{col.amount}</span>
-            </div>
-            <p className="text-xs text-white/40 mt-2">
-              {new Date(col.createdAt).toLocaleDateString()}
-            </p>
-          </GlassCard>
-        ))}
+        {loading ? (
+          Array(3).fill(0).map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+          ))
+        ) : (
+          collections.map(col => (
+            <GlassCard key={col._id} className="relative group">
+              <div className="absolute top-2 right-2 flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => handleManageClick(col)}
+                  className="p-2 rounded-full bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-colors"
+                  title="Manage Applicability"
+                >
+                  <Users size={16} />
+                </button>
+                <button
+                  onClick={() => handleEditClick(col)}
+                  className="p-2 rounded-full bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                  title="Edit Details"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                  onClick={() => setDeleteModal({ isOpen: true, id: col._id })}
+                  className="p-2 rounded-full bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors"
+                  title="Delete Collection"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+              <h4 className="font-medium text-lg text-white/90 pr-20">{col.title}</h4>
+              <div className="flex items-center gap-1 text-emerald-400 mt-1">
+                <IndianRupee size={14} />
+                <span className="font-bold text-xl">{col.amount}</span>
+              </div>
+              <p className="text-xs text-white/40 mt-2">
+                {new Date(col.createdAt).toLocaleDateString()}
+              </p>
+            </GlassCard>
+          ))
+        )}
       </div>
 
       <ConfirmModal

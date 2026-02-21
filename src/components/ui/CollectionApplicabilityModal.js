@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { X, Search, Check, Ban, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { Skeleton } from './Skeleton';
 
 export default function CollectionApplicabilityModal({ isOpen, onClose, collection }) {
   const [students, setStudents] = useState([]);
@@ -181,7 +182,15 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
             {/* List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
               {loading ? (
-                <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white/40" /></div>
+                Array(6).fill(0).map((_, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-20" />
+                    </div>
+                    <Skeleton className="h-8 w-24 rounded-lg" />
+                  </div>
+                ))
               ) : filteredStudents.length === 0 ? (
                 <p className="text-center text-white/40 py-8">No students found</p>
               ) : (
