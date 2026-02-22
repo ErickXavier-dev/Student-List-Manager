@@ -24,8 +24,11 @@ export default function Home() {
       const dataStudents = await resStudents.json();
       const dataCollections = await resCollections.json();
 
-      setStudents(dataStudents);
-      setCollections(dataCollections);
+      if (Array.isArray(dataStudents)) setStudents(dataStudents);
+      else setStudents([]);
+
+      if (Array.isArray(dataCollections)) setCollections(dataCollections);
+      else setCollections([]);
     } catch (err) {
       console.error(err);
     } finally {

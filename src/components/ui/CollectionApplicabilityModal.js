@@ -20,7 +20,8 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/students');
+      const url = collection?.classId ? `/api/students?classId=${collection.classId}` : '/api/students';
+      const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to fetch students');
       const data = await res.json();
       setStudents(data);

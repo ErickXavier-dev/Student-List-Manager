@@ -2,20 +2,38 @@ import dbConnect from '@/lib/db';
 import { Student } from '@/models/Schemas';
 import { NextResponse } from 'next/server';
 
-export async function GET() {
+import { getSession } from '@/lib/auth-utils';
+
+export async function GET(request) {
   await dbConnect();
+  const session = await getSession();
+
+  const { searchParams } = new URL(request.url);
+  let classId = searchParams.get('classId');
+
+  // RBAC: If logged in and NOT HOD, force session classId
+  if (session && session.role !== 'hod') {
+    classId = session.classId;
+  }
+
   try {
-    const students = await Student.find({}).sort({ registerNumber: 1 });
+    const query = classId ? { classId } : {};
+    const students = await Student.find(query).sort({ registerNumber: 1 });
     return NextResponse.json(students);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
+
 export async function PATCH(request) {
   await dbConnect();
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   try {
     const { studentId, collectionId, status } = await request.json();
+
 
     if (!studentId || !collectionId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });

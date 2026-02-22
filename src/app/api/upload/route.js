@@ -6,44 +6,51 @@ export async function POST(request) {
   await dbConnect();
 
   try {
-    const { students } = await request.json();
+    const { students, classId } = await request.json();
 
     if (!students || !Array.isArray(students)) {
       return NextResponse.json({ error: 'Invalid data format' }, { status: 400 });
+    }
+
+    if (!classId) {
+      return NextResponse.json({ error: 'Target class is required for upload' }, { status: 400 });
     }
 
     let updatedCount = 0;
     let createdCount = 0;
     const errors = [];
 
-    // Drop stale index if it exists (Fix for Roll Number -> Register Number migration)
+    // Drop stale global unique index on registerNumber if it exists
     try {
-      await Student.collection.dropIndex('rollNumber_1');
-      console.log('Dropped stale index: rollNumber_1');
+      await Student.collection.dropIndex('registerNumber_1');
+      console.log('Dropped stale global index: registerNumber_1');
     } catch (e) {
       // Ignore if index doesn't exist
     }
 
     for (const studentData of students) {
-      // Normalize keys (assuming headers might vary slightly, but enforcing 'Name' and 'Register Number')
-      // We expect the frontend to map this to { name, registerNumber }
       const { name, registerNumber } = studentData;
 
       if (!name || !registerNumber) continue;
 
       try {
-        const existing = await Student.findOne({ registerNumber });
+        // Look for student within the specific class
+        const existing = await Student.findOne({ registerNumber, classId });
         if (existing) {
-          existing.name = name; // Update name if changed
+          existing.name = name;
           await existing.save();
           updatedCount++;
         } else {
-          await Student.create({ name, registerNumber: String(registerNumber) });
+          await Student.create({
+            name,
+            registerNumber: String(registerNumber),
+            classId: classId
+          });
           createdCount++;
         }
       } catch (err) {
         if (err.code === 11000) {
-          errors.push(`Duplicate Register Number: ${registerNumber}`);
+          errors.push(`Duplicate Register Number: ${registerNumber} in this class`);
         } else {
           errors.push(`Error processing ${name}: ${err.message}`);
         }
@@ -59,7 +66,7 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${students.length} rows. Created ${createdCount}, Updated ${updatedCount}.`, // ${errors.length > 0 ? `Errors: ${errors.length}` : ''}
+      message: `Processed ${students.length} rows. Created ${createdCount}, Updated ${updatedCount}.`,
       inputErrors: errors
     });
 
