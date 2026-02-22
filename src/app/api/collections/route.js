@@ -39,7 +39,7 @@ export async function POST(request) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { title, amount, isGeneral } = await request.json();
+    const { title, amount, isGeneral, classId: providedClassId } = await request.json();
 
     if (!title || !amount) {
       return NextResponse.json({ error: 'Title and amount are required' }, { status: 400 });
@@ -53,9 +53,8 @@ export async function POST(request) {
     const newCollection = await Collection.create({
       title,
       amount: Number(amount),
-      classId: isGeneral ? null : session.classId,
+      classId: isGeneral ? null : (session.role === 'hod' ? providedClassId : session.classId),
       createdByRole: session.role,
-      // For now we don't have individual IDs, so we use role
     });
 
     return NextResponse.json(newCollection, { status: 201 });

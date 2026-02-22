@@ -4,9 +4,10 @@ import ConfirmModal from './ui/ConfirmModal';
 import EditCollectionModal from './ui/EditCollectionModal';
 import CollectionApplicabilityModal from './ui/CollectionApplicabilityModal';
 import { Plus, Trash2, Loader2, IndianRupee, Pencil, Users } from 'lucide-react';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { toast } from 'sonner';
 
-export default function CollectionManager({ collections, onUpdate, loading, role }) {
+export default function CollectionManager({ collections, onUpdate, loading, role, classId, hideGeneralToggle }) {
   const [formData, setFormData] = useState({ title: '', amount: '', isGeneral: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
@@ -30,7 +31,11 @@ export default function CollectionManager({ collections, onUpdate, loading, role
       const res = await fetch('/api/collections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          isGeneral: hideGeneralToggle ? false : formData.isGeneral,
+          classId: (hideGeneralToggle || !formData.isGeneral) ? classId : null
+        }),
       });
 
       if (!res.ok) {
@@ -88,26 +93,52 @@ export default function CollectionManager({ collections, onUpdate, loading, role
 
   return (
     <div className="space-y-6">
-      <GlassCard>
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Plus size={20} className="text-emerald-400" />
-          New Collection
-        </h3>
+      <GlassCard className="border-emerald-500/10 overflow-visible">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+              <Plus size={20} />
+            </div>
+            New Collection
+          </h3>
+          {role === 'hod' && !hideGeneralToggle && (
+            <div className="p-1 px-3 rounded-full bg-white/5 border border-white/5">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={formData.isGeneral}
+                    onChange={e => setFormData({ ...formData, isGeneral: e.target.checked })}
+                  />
+                  <div className="w-9 h-5 bg-white/10 rounded-full peer peer-checked:bg-purple-500/50 transition-colors"></div>
+                  <div className="absolute left-1 top-1 w-3 h-3 bg-white/40 rounded-full peer-checked:translate-x-4 peer-checked:bg-white transition-all"></div>
+                </div>
+                <span className="text-[10px] uppercase font-bold tracking-widest text-white/40 group-hover:text-white/80 transition-colors">General Mode</span>
+              </label>
+            </div>
+          )}
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <input
-              type="text"
-              placeholder="Event Name (e.g. Picnic)"
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2 outline-none focus:border-emerald-500/50 transition-colors"
-              value={formData.title}
-              onChange={e => setFormData({ ...formData, title: e.target.value })}
-            />
-            <div className="relative">
-              <IndianRupee size={16} className="absolute left-3 top-3 text-white/40" />
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative group">
+              <input
+                type="text"
+                placeholder="Event Name (e.g. Picnic)"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-3 outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all placeholder:text-white/20"
+                value={formData.title}
+                onChange={e => setFormData({ ...formData, title: e.target.value })}
+              />
+            </div>
+            <div className="relative group">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400">
+                <IndianRupee size={18} />
+              </div>
               <input
                 type="number"
                 placeholder="Amount"
-                className="w-full sm:w-32 bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 outline-none focus:border-emerald-500/50 transition-colors"
+                className="w-full md:w-40 bg-white/5 border border-white/10 rounded-xl pl-11 pr-5 py-3 outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all placeholder:text-white/20"
                 value={formData.amount}
                 onChange={e => setFormData({ ...formData, amount: e.target.value })}
               />
@@ -115,27 +146,11 @@ export default function CollectionManager({ collections, onUpdate, loading, role
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-medium px-6 py-2 rounded-lg transition-colors flex items-center justify-center min-w-[100px]"
+              className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-black uppercase tracking-widest text-xs px-8 py-3 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center min-w-[120px]"
             >
-              {isSubmitting ? <Loader2 className="animate-spin" /> : 'Create'}
+              {isSubmitting ? <Loader2 className="animate-spin" /> : 'Create Event'}
             </button>
           </div>
-
-          {role === 'hod' && (
-            <label className="flex items-center gap-2 cursor-pointer w-fit group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={formData.isGeneral}
-                  onChange={e => setFormData({ ...formData, isGeneral: e.target.checked })}
-                />
-                <div className="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-purple-500/50 transition-colors"></div>
-                <div className="absolute left-1 top-1 w-3 h-3 bg-white/40 rounded-full peer-checked:translate-x-5 peer-checked:bg-white transition-all"></div>
-              </div>
-              <span className="text-sm text-white/60 group-hover:text-white transition-colors">General Collection (Apply to all classes)</span>
-            </label>
-          )}
         </form>
       </GlassCard>
 
