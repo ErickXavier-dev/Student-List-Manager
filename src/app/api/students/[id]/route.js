@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import { Student } from '@/models/Schemas';
-import { getSession, isHOD, isTeacher } from '@/lib/auth-utils';
+import { getSession, isHOD, isTeacher, isRep } from '@/lib/auth-utils';
 
 export async function PUT(request, { params }) {
   await dbConnect();
@@ -15,8 +15,8 @@ export async function PUT(request, { params }) {
     const student = await Student.findById(id);
     if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
 
-    // Permission check: HOD or Teacher of the same class
-    const canEdit = isHOD(session) || (isTeacher(session) && String(session.classId) === String(student.classId));
+    // Permission check: HOD, Teacher, or Rep of the same class
+    const canEdit = isHOD(session) || ((isTeacher(session) || isRep(session)) && String(session.classId) === String(student.classId));
     if (!canEdit) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
 
     student.name = name || student.name;
@@ -40,8 +40,8 @@ export async function DELETE(request, { params }) {
     const student = await Student.findById(id);
     if (!student) return NextResponse.json({ error: 'Student not found' }, { status: 404 });
 
-    // Permission check: HOD or Teacher of the same class
-    const canDelete = isHOD(session) || (isTeacher(session) && String(session.classId) === String(student.classId));
+    // Permission check: HOD, Teacher, or Rep of the same class
+    const canDelete = isHOD(session) || ((isTeacher(session) || isRep(session)) && String(session.classId) === String(student.classId));
     if (!canDelete) return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
 
     await Student.findByIdAndDelete(id);
