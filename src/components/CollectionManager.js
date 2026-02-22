@@ -7,8 +7,8 @@ import { Plus, Trash2, Loader2, IndianRupee, Pencil, Users } from 'lucide-react'
 import { Skeleton } from '@/components/ui/Skeleton';
 import { toast } from 'sonner';
 
-export default function CollectionManager({ collections, onUpdate, loading, role, classId, hideGeneralToggle }) {
-  const [formData, setFormData] = useState({ title: '', amount: '', isGeneral: false });
+export default function CollectionManager({ collections, onUpdate, loading, role, classId, hideGeneralToggle, classes = [] }) {
+  const [formData, setFormData] = useState({ title: '', amount: '', isGeneral: false, targetClassId: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
   const [editModal, setEditModal] = useState({ isOpen: false, collection: null });
@@ -26,15 +26,21 @@ export default function CollectionManager({ collections, onUpdate, loading, role
     e.preventDefault();
     if (!formData.title || !formData.amount) return;
 
+    // If HOD is creating a specific collection in global view, they MUST select a class
+    if (role === 'hod' && !hideGeneralToggle && !formData.isGeneral && !formData.targetClassId) {
+      return toast.error("Please select a target class");
+    }
+
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/collections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
+          title: formData.title,
+          amount: formData.amount,
           isGeneral: hideGeneralToggle ? false : formData.isGeneral,
-          classId: (hideGeneralToggle || !formData.isGeneral) ? classId : null
+          classId: hideGeneralToggle ? classId : (formData.isGeneral ? null : formData.targetClassId)
         }),
       });
 
@@ -45,7 +51,7 @@ export default function CollectionManager({ collections, onUpdate, loading, role
 
       const newCollection = await res.json();
       toast.success('Collection Created');
-      setFormData({ title: '', amount: '', isGeneral: false });
+      setFormData({ title: '', amount: '', isGeneral: false, targetClassId: '' });
       if (onUpdate) onUpdate(newCollection);
     } catch (error) {
       toast.error(error.message);
@@ -91,6 +97,8 @@ export default function CollectionManager({ collections, onUpdate, loading, role
     }
   };
 
+  const showClassSelector = role === 'hod' && !hideGeneralToggle && !formData.isGeneral;
+
   return (
     <div className="space-y-6">
       <GlassCard className="border-emerald-500/10 overflow-visible">
@@ -131,6 +139,22 @@ export default function CollectionManager({ collections, onUpdate, loading, role
                 onChange={e => setFormData({ ...formData, title: e.target.value })}
               />
             </div>
+
+            {showClassSelector && (
+              <div className="flex-1 min-w-[180px]">
+                <select
+                  className="w-full h-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-purple-500/50 appearance-none text-white/90 font-medium cursor-pointer transition-all"
+                  value={formData.targetClassId}
+                  onChange={e => setFormData({ ...formData, targetClassId: e.target.value })}
+                >
+                  <option value="" className="bg-slate-900">Select Class...</option>
+                  {classes.map(c => (
+                    <option key={c._id} value={c._id} className="bg-slate-900">{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="relative group">
               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400">
                 <IndianRupee size={18} />
@@ -138,7 +162,7 @@ export default function CollectionManager({ collections, onUpdate, loading, role
               <input
                 type="number"
                 placeholder="Amount"
-                className="w-full md:w-40 bg-white/5 border border-white/10 rounded-xl pl-11 pr-5 py-3 outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all placeholder:text-white/20"
+                className="w-full md:w-32 bg-white/5 border border-white/10 rounded-xl pl-11 pr-5 py-3 outline-none focus:border-emerald-500/50 focus:bg-white/10 transition-all placeholder:text-white/20"
                 value={formData.amount}
                 onChange={e => setFormData({ ...formData, amount: e.target.value })}
               />

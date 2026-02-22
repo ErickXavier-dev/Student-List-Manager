@@ -319,6 +319,7 @@ export default function AdminPage() {
             loading={loading}
             role={session.role}
             classId={isHOD ? null : session.classId}
+            classes={classes}
           />
         )}
 
