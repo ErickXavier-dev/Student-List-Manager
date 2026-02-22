@@ -37,11 +37,7 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
     setUpdating(student._id);
 
     const isNA = student.notApplicable?.[collection._id];
-
-    // Prevent toggling if already NA
-    if (isNA) return;
-
-    const newStatus = 'NA';
+    const newStatus = isNA ? 'APPLICABLE' : 'NA';
 
     try {
       const res = await fetch('/api/students', {
@@ -213,23 +209,22 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
                       <div className="flex items-center gap-3">
                         {isPaid && <span className="text-emerald-400 text-xs font-medium px-2 py-1 bg-emerald-500/10 rounded">Paid</span>}
 
-                        {isNA ? (
-                          <span className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-rose-500/20 text-rose-400 cursor-not-allowed select-none">
-                            <Ban size={14} /> NA
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleToggleNA(student)}
-                            disabled={updating === student._id}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
-                          >
-                            {updating === student._id ? (
-                              <Loader2 size={14} className="animate-spin" />
-                            ) : (
-                              <><Check size={14} /> Applicable</>
-                            )}
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleToggleNA(student)}
+                          disabled={updating === student._id}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isNA
+                              ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/20'
+                              : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-transparent'
+                            }`}
+                        >
+                          {updating === student._id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : isNA ? (
+                            <><Ban size={14} /> NA</>
+                          ) : (
+                            <><Check size={14} /> Applicable</>
+                          )}
+                        </button>
                       </div>
                     </div>
                   );
