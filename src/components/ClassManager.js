@@ -36,6 +36,14 @@ export default function ClassManager({ classes, fetchData }) {
     }
   }, [detailClass]);
 
+  // Sync detailClass with classes list to ensure status dots update immediately
+  useEffect(() => {
+    if (detailClass && classes.length > 0) {
+      const updated = classes.find(c => c._id === detailClass._id);
+      if (updated) setDetailClass(updated);
+    }
+  }, [classes, detailClass?._id]);
+
   const handleCreateClass = async (e) => {
     e.preventDefault();
     if (!newClassName.trim()) return;
@@ -68,6 +76,7 @@ export default function ClassManager({ classes, fetchData }) {
       toast.success(`${role} password updated (Valid for 6 months)`);
       setEditingPasswords(null);
       setNewPassword('');
+      fetchData();
     } catch (err) {
       toast.error(err.message);
     }
@@ -82,6 +91,7 @@ export default function ClassManager({ classes, fetchData }) {
       });
       if (!res.ok) throw new Error('Failed to revoke password');
       toast.success(`${role} password revoked`);
+      fetchData();
     } catch (err) {
       toast.error(err.message);
     }
@@ -98,25 +108,18 @@ export default function ClassManager({ classes, fetchData }) {
           <ArrowLeft size={20} /> Back to Class List
         </button>
 
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 glass p-6 rounded-2xl border border-white/10">
-          <div>
-            <h2 className="text-2xl font-bold flex items-center gap-3">
-              <School className="text-purple-400" size={28} /> {detailClass.name}
-            </h2>
-            <p className="text-white/40 text-sm mt-1 uppercase tracking-widest font-bold">Class Management Dashboard</p>
-          </div>
+        <header className="flex items-center justify-between glass p-6 rounded-3xl border border-white/10 overflow-hidden relative">
+          <div className="absolute -top-24 -left-24 w-48 h-48 bg-purple-500/10 blur-[90px] rounded-full"></div>
 
-          <div className="flex gap-4">
-            <div className="p-3 rounded-xl bg-white/5 border border-white/5 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-orange-500/20 text-orange-400">
-                <Lock size={18} />
-              </div>
-              <div>
-                <p className="text-[10px] text-white/40 uppercase font-bold tracking-tighter">Access Status</p>
-                <div className="flex gap-2 mt-0.5">
-                  <span className={`text-[10px] px-1.5 rounded-full ${detailClass.teacherPasswordRevoked ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'} font-bold`}>T</span>
-                  <span className={`text-[10px] px-1.5 rounded-full ${detailClass.repPasswordRevoked ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'} font-bold`}>R</span>
-                </div>
+          <div className="relative z-10 flex items-center gap-6">
+            <div className="p-4 rounded-3xl bg-purple-500/20 text-purple-400 shadow-inner border border-purple-500/20">
+              <School size={32} />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black text-white tracking-tight leading-none uppercase">{detailClass.name}</h2>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <p className="text-[10px] text-white/40 uppercase tracking-[0.4em] font-black">Secure Management Terminal</p>
               </div>
             </div>
           </div>
@@ -135,7 +138,13 @@ export default function ClassManager({ classes, fetchData }) {
                 </div>
               </div>
             </div>
-            <StudentManager classId={detailClass._id} collections={classCollections} />
+            <StudentManager
+              classId={detailClass._id}
+              collections={classCollections}
+              detailClass={detailClass}
+              setEditingPasswords={setEditingPasswords}
+              handleRevokePassword={handleRevokePassword}
+            />
           </section>
 
           <section className="space-y-6">
@@ -207,11 +216,11 @@ export default function ClassManager({ classes, fetchData }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {classes.map(c => (
-          <GlassCard key={c._id} className="p-0 flex flex-col justify-between group hover:border-purple-500/40 transition-all duration-500 overflow-hidden min-h-[280px]">
+          <GlassCard key={c._id} className="p-0 flex flex-col justify-between group hover:border-purple-500/40 transition-all duration-500 overflow-hidden min-h-[200px]">
             {/* Top accent bar */}
             <div className="h-1 w-full bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 opacity-30 group-hover:opacity-100 transition-opacity"></div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6">
               <div className="flex justify-between items-start">
                 <div className="space-y-1">
                   <h4 className="text-2xl font-black text-white group-hover:text-purple-300 transition-colors uppercase tracking-tight">{c.name}</h4>
@@ -222,48 +231,6 @@ export default function ClassManager({ classes, fetchData }) {
                 </div>
                 <div className="p-3 rounded-2xl bg-white/5 border border-white/10 group-hover:bg-purple-500/10 group-hover:border-purple-500/20 transition-all duration-500">
                   <School className="text-white/20 group-hover:text-purple-400 transition-colors" size={24} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative group/role p-3 rounded-2xl bg-black/40 border border-white/5 hover:border-white/10 transition-all overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-500/50"></div>
-                  <p className="text-[9px] text-white/20 uppercase font-black tracking-widest mb-2 px-1">Authority I</p>
-                  <p className="text-xs font-bold text-white/80 mb-3 px-1">Teacher</p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingPasswords({ id: c._id, role: 'teacher' })}
-                      className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-tighter transition-all border border-white/5 active:scale-95"
-                    >
-                      Reset
-                    </button>
-                    <button
-                      onClick={() => handleRevokePassword(c._id, 'teacher')}
-                      className="flex-1 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-tighter transition-all border border-red-500/5 active:scale-95"
-                    >
-                      Kick
-                    </button>
-                  </div>
-                </div>
-
-                <div className="relative group/role p-3 rounded-2xl bg-black/40 border border-white/5 hover:border-white/10 transition-all overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-purple-500/50"></div>
-                  <p className="text-[9px] text-white/20 uppercase font-black tracking-widest mb-2 px-1">Authority II</p>
-                  <p className="text-xs font-bold text-white/80 mb-3 px-1">Class Rep</p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingPasswords({ id: c._id, role: 'rep' })}
-                      className="flex-1 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[9px] font-black uppercase tracking-tighter transition-all border border-white/5 active:scale-95"
-                    >
-                      Reset
-                    </button>
-                    <button
-                      onClick={() => handleRevokePassword(c._id, 'rep')}
-                      className="flex-1 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-tighter transition-all border border-red-500/5 active:scale-95"
-                    >
-                      Kick
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>

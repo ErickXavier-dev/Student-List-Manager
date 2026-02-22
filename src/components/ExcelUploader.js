@@ -76,7 +76,10 @@ export default function ExcelUploader({ onUploadSuccess, classId }) {
   };
 
   return (
-    <GlassCard className="text-center p-8 border-dashed border-2 border-white/20 bg-transparent hover:bg-white/5 transition-colors">
+    <GlassCard className="text-center p-12 border-dashed border-2 border-white/10 bg-black/20 hover:bg-emerald-500/5 hover:border-emerald-500/40 transition-all duration-500 group relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full group-hover:bg-emerald-500/10 transition-colors"></div>
+
       <input
         type="file"
         accept=".xlsx, .xls, .csv"
@@ -86,26 +89,41 @@ export default function ExcelUploader({ onUploadSuccess, classId }) {
       />
 
       <div
-        className="flex flex-col items-center gap-4 cursor-pointer"
+        className="flex flex-col items-center gap-6 cursor-pointer relative z-10"
         onClick={() => fileInputRef.current?.click()}
       >
-        <div className="p-4 rounded-full bg-white/10 text-emerald-400">
-          {isUploading ? <Loader2 className="animate-spin" size={32} /> : <FileSpreadsheet size={32} />}
+        <div className="p-6 rounded-3xl bg-white/5 border border-white/10 text-emerald-400 group-hover:scale-110 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/20 transition-all duration-500 shadow-xl group-hover:shadow-emerald-500/10">
+          {isUploading ? (
+            <Loader2 className="animate-spin" size={40} />
+          ) : (
+            <div className="relative">
+              <FileSpreadsheet size={40} />
+              <div className="absolute -top-1 -right-1 h-3 w-3 bg-emerald-500 rounded-full animate-ping"></div>
+            </div>
+          )}
         </div>
-        <div>
-          <h3 className="text-lg font-semibold">Upload Class List</h3>
-          <p className="text-sm text-white/60">
-            Drop your Excel / CSV file here to update student list.
-            <br />
-            <span className="text-xs opacity-70">(Columns: Name, Register Number)</span>
+
+        <div className="space-y-2">
+          <h3 className="text-2xl font-black text-white tracking-tight uppercase">Update Registry</h3>
+          <p className="text-xs text-white/40 uppercase font-black tracking-[0.2em] leading-relaxed max-w-[240px] mx-auto">
+            Drop Spreadsheet or <span className="text-emerald-400">Browse Files</span> to Sync Student Data
           </p>
+        </div>
+
+        <div className="flex flex-col items-center gap-4 pt-2">
+          <div className="px-4 py-1.5 rounded-full bg-white/5 border border-white/5 text-[9px] font-black text-white/30 uppercase tracking-widest">
+            Supported: .XLSX, .XLS, .CSV
+          </div>
+
           <a
             href="/sample.csv"
             download
-            className="mt-2 text-xs text-emerald-400 hover:text-emerald-300 underline"
+            className="group/link flex items-center gap-2 text-[10px] font-black text-white/40 hover:text-emerald-400 transition-colors uppercase tracking-[0.1em]"
             onClick={(e) => e.stopPropagation()}
           >
-            Download Sample CSV
+            <div className="h-px w-4 bg-white/20 group-hover/link:bg-emerald-400/50 transition-colors"></div>
+            Download Structure Template
+            <div className="h-px w-4 bg-white/20 group-hover/link:bg-emerald-400/50 transition-colors"></div>
           </a>
         </div>
       </div>

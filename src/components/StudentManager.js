@@ -86,7 +86,7 @@ const StudentRow = ({ student, refreshData, onDeleteClick }) => {
   );
 };
 
-export default function StudentManager({ classId, collections = [] }) {
+export default function StudentManager({ classId, collections = [], detailClass, setEditingPasswords, handleRevokePassword, refreshClassData }) {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -161,8 +161,63 @@ export default function StudentManager({ classId, collections = [] }) {
   );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-1">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="lg:col-span-1 space-y-3">
+        {/* Authority Management Section */}
+        {detailClass && (
+          <div className="space-y-3">
+            <div className="relative group/role p-5 rounded-2xl bg-black/40 border border-white/5 hover:border-white/10 transition-all overflow-hidden">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500/50"></div>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <p className="text-[10px] text-white/20 uppercase font-black tracking-widest leading-none mb-1.5">Authority Level I</p>
+                  <p className="text-base font-black text-white">Teacher Terminal</p>
+                </div>
+                <div className={`h-2.5 w-2.5 rounded-full ${detailClass.teacherPasswordRevoked ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`}></div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setEditingPasswords({ id: detailClass._id, role: 'teacher' })}
+                  className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all border border-white/5 active:scale-95"
+                >
+                  Reset Key
+                </button>
+                <button
+                  onClick={() => handleRevokePassword(detailClass._id, 'teacher')}
+                  className="flex-1 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-200 text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/5 active:scale-95"
+                >
+                  Terminate
+                </button>
+              </div>
+            </div>
+
+            <div className="relative group/role p-5 rounded-2xl bg-black/40 border border-white/5 hover:border-white/10 transition-all overflow-hidden">
+              <div className="absolute top-0 left-0 w-1.5 h-full bg-purple-500/50"></div>
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <p className="text-[10px] text-white/20 uppercase font-black tracking-widest leading-none mb-1.5">Authority Level II</p>
+                  <p className="text-base font-black text-white">Class Rep Hub</p>
+                </div>
+                <div className={`h-2.5 w-2.5 rounded-full ${detailClass.repPasswordRevoked ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'}`}></div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setEditingPasswords({ id: detailClass._id, role: 'rep' })}
+                  className="flex-1 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest transition-all border border-white/5 active:scale-95"
+                >
+                  Reset Key
+                </button>
+                <button
+                  onClick={() => handleRevokePassword(detailClass._id, 'rep')}
+                  className="flex-1 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-200 text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/5 active:scale-95"
+                >
+                  Terminate
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <ExcelUploader onUploadSuccess={() => fetchStudents(false)} classId={classId} />
       </div>
 
@@ -188,13 +243,13 @@ export default function StudentManager({ classId, collections = [] }) {
           />
         </div>
 
-        <div className="bg-white/5 rounded-xl border border-white/10 overflow-x-auto max-h-[500px] overflow-y-auto custom-scrollbar">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-white/5 text-white/60 sticky top-0 backdrop-blur-md z-10">
+        <div className="bg-white/5 rounded-2xl border border-white/5 overflow-x-auto max-h-[680px] overflow-y-auto custom-scrollbar shadow-inner">
+          <table className="w-full text-sm text-left border-collapse">
+            <thead className="bg-white/5 text-white/40 sticky top-0 backdrop-blur-xl z-20 border-b border-white/5">
               <tr>
-                <th className="px-4 py-3">Reg No</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">Registry ID</th>
+                <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px]">Student Name</th>
+                <th className="px-6 py-4 font-black uppercase tracking-widest text-[10px] text-right">Operations</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
