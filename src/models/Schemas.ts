@@ -1,13 +1,46 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
-const ClassSchema = new mongoose.Schema({
+export interface IClass extends Document {
+  name: string;
+  teacherPassword?: string;
+  teacherPasswordExpires?: Date;
+  teacherPasswordRevoked: boolean;
+  repPassword?: string;
+  repPasswordExpires?: Date;
+  repPasswordRevoked: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IStudent extends Document {
+  name: string;
+  registerNumber: string;
+  classId?: mongoose.Types.ObjectId;
+  payments: Map<string, string>;
+  notApplicable: Map<string, boolean>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ICollection extends Document {
+  title: string;
+  amount: number;
+  date: Date;
+  classId?: mongoose.Types.ObjectId;
+  createdByRole: 'hod' | 'teacher' | 'rep';
+  createdById?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const ClassSchema = new Schema<IClass>({
   name: {
     type: String,
     required: [true, 'Please provide a name for the class.'],
     unique: true,
   },
   teacherPassword: {
-    type: String, // Hashed or plain for now as per project context
+    type: String,
   },
   teacherPasswordExpires: {
     type: Date,
@@ -28,7 +61,7 @@ const ClassSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-const StudentSchema = new mongoose.Schema({
+const StudentSchema = new Schema<IStudent>({
   name: {
     type: String,
     required: [true, 'Please provide a name for the student.'],
@@ -38,17 +71,15 @@ const StudentSchema = new mongoose.Schema({
     required: [true, 'Please provide a register number.'],
   },
   classId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Class',
-    required: false, // Will migrate soon
+    required: false,
   },
-  // Map of Collection ID -> String (PAID/NA/PENDING)
   payments: {
     type: Map,
     of: String,
     default: {}
   },
-  // Map of Collection ID -> Boolean (true if NA)
   notApplicable: {
     type: Map,
     of: Boolean,
@@ -59,7 +90,7 @@ const StudentSchema = new mongoose.Schema({
 // Compound index for uniqueness per class
 StudentSchema.index({ registerNumber: 1, classId: 1 }, { unique: true });
 
-const CollectionSchema = new mongoose.Schema({
+const CollectionSchema = new Schema<ICollection>({
   title: {
     type: String,
     required: [true, 'Please provide a title for the collection.'],
@@ -73,9 +104,9 @@ const CollectionSchema = new mongoose.Schema({
     default: Date.now,
   },
   classId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Class',
-    required: false, // null means general collection
+    required: false,
   },
   createdByRole: {
     type: String,
@@ -88,7 +119,6 @@ const CollectionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Prevent overwriting models upon recompilation
-export const Class = mongoose.models.Class || mongoose.model('Class', ClassSchema);
-export const Student = mongoose.models.Student || mongoose.model('Student', StudentSchema);
-export const Collection = mongoose.models.Collection || mongoose.model('Collection', CollectionSchema);
-
+export const Class: Model<IClass> = mongoose.models.Class || mongoose.model<IClass>('Class', ClassSchema);
+export const Student: Model<IStudent> = mongoose.models.Student || mongoose.model<IStudent>('Student', StudentSchema);
+export const Collection: Model<ICollection> = mongoose.models.Collection || mongoose.model<ICollection>('Collection', CollectionSchema);

@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import { Class } from '@/models/Schemas';
 import { getSession, isHOD, isTeacher } from '@/lib/auth-utils';
 
-export async function PUT(request, { params }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await dbConnect();
   const session = await getSession();
   const { id } = await params;
@@ -44,7 +44,7 @@ export async function PUT(request, { params }) {
 
     await targetClass.save();
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

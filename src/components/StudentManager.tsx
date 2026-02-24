@@ -8,7 +8,33 @@ import { Search, Edit2, Trash2, Check, X, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
-const StudentRow = ({ student, refreshData, onDeleteClick }) => {
+interface Student {
+  _id: string;
+  name: string;
+  registerNumber: string;
+  notApplicable?: Record<string, boolean>;
+  payments?: Record<string, string | boolean>;
+}
+
+interface Collection {
+  _id: string;
+  title: string;
+}
+
+interface ClassDetail {
+  _id: string;
+  name: string;
+  teacherPasswordRevoked?: boolean;
+  repPasswordRevoked?: boolean;
+}
+
+interface StudentRowProps {
+  student: Student;
+  refreshData: () => void;
+  onDeleteClick: (student: Student) => void;
+}
+
+const StudentRow = ({ student, refreshData, onDeleteClick }: StudentRowProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({ name: student.name, registerNumber: student.registerNumber });
   const [isSaving, setIsSaving] = useState(false);
@@ -27,7 +53,7 @@ const StudentRow = ({ student, refreshData, onDeleteClick }) => {
       toast.success('Student updated');
       setIsEditing(false);
       refreshData();
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     } finally {
       setIsSaving(false);
@@ -86,11 +112,29 @@ const StudentRow = ({ student, refreshData, onDeleteClick }) => {
   );
 };
 
-export default function StudentManager({ classId, collections = [], detailClass, setEditingPasswords, handleRevokePassword, refreshClassData }) {
-  const [students, setStudents] = useState([]);
+interface StudentManagerProps {
+  classId: string;
+  collections?: Collection[];
+  detailClass?: ClassDetail | null;
+  setEditingPasswords: (data: { id: string; role: 'teacher' | 'rep' }) => void;
+  handleRevokePassword: (id: string, role: string) => void;
+  refreshClassData?: () => void;
+}
+
+export default function StudentManager({
+  classId,
+  collections = [],
+  detailClass,
+  setEditingPasswords,
+  handleRevokePassword
+}: StudentManagerProps) {
+  const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, student: null });
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; student: Student | null }>({
+    isOpen: false,
+    student: null
+  });
 
   const fetchStudents = useCallback(async (showLoading = true) => {
     if (!classId) return;
@@ -125,14 +169,19 @@ export default function StudentManager({ classId, collections = [], detailClass,
 
       toast.success('Student deleted');
       fetchStudents(false);
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     }
   };
 
+  const filteredStudents = students.filter(s =>
+    s.name.toLowerCase().includes(search.toLowerCase()) ||
+    s.registerNumber.toString().includes(search)
+  );
+
   const handleExport = () => {
     const dataToExport = filteredStudents.map(s => {
-      const base = {
+      const base: Record<string, string | number> = {
         "Register Number": s.registerNumber,
         "Name": s.name,
       };
@@ -143,7 +192,7 @@ export default function StudentManager({ classId, collections = [], detailClass,
         let status = s.payments?.[c._id];
         if (status === true) status = 'PAID';
         if (!status) status = 'PENDING';
-        base[c.title] = isNA ? 'N/A' : status;
+        base[c.title] = isNA ? 'N/A' : (status as string);
       });
 
       return base;
@@ -154,11 +203,6 @@ export default function StudentManager({ classId, collections = [], detailClass,
     XLSX.utils.book_append_sheet(wb, ws, "Students");
     XLSX.writeFile(wb, `Students_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
-
-  const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.registerNumber.toString().includes(search)
-  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -272,7 +316,7 @@ export default function StudentManager({ classId, collections = [], detailClass,
                     />
                   ))}
                   {filteredStudents.length === 0 && (
-                    <tr><td colSpan="3" className="text-center py-8 text-white/40">No students found</td></tr>
+                    <tr><td colSpan={3} className="text-center py-8 text-white/40">No students found</td></tr>
                   )}
                 </>
               )}

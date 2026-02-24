@@ -2,8 +2,14 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, LucideIcon } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface NavItemProps {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -20,7 +26,7 @@ export default function Navbar() {
     }
   };
 
-  const NavItem = ({ href, label, icon: Icon }) => {
+  const NavItem = ({ href, label, icon: Icon }: NavItemProps) => {
     const isActive = pathname === href;
     return (
       <Link
@@ -57,4 +63,3 @@ export default function Navbar() {
     </nav>
   );
 }
-

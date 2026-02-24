@@ -3,28 +3,67 @@ import { useState, useEffect } from 'react';
 import GlassCard from '@/components/ui/GlassCard';
 import { Skeleton } from '@/components/ui/Skeleton';
 import StudentCard from '@/components/StudentCard';
-import { Search, Wallet, Users, AlertCircle, Lock, Loader2, ArrowRight, UserCircle, School, Users as UsersIcon, LogOut } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Wallet, Users as UsersIcon, AlertCircle, Lock, Loader2, ArrowRight, School, LogOut, LucideIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
+interface Student {
+  _id: string;
+  name: string;
+  registerNumber: string;
+  notApplicable?: Record<string, boolean>;
+  payments?: Record<string, string | boolean>;
+}
+
+interface Collection {
+  _id: string;
+  title: string;
+  amount: number;
+  classId?: string | null;
+}
+
+interface ClassData {
+  _id: string;
+  name: string;
+}
+
+interface Session {
+  role: string;
+  classId?: string;
+  className?: string;
+}
+
 export default function Home() {
-  const [students, setStudents] = useState([]);
-  const [collections, setCollections] = useState([]);
-  const [selectedCollection, setSelectedCollection] = useState(null);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'paid', 'pending'
 
   // Auth State
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [classes, setClasses] = useState([]);
+  const [classes, setClasses] = useState<ClassData[]>([]);
   const [loginForm, setLoginForm] = useState({
     password: '',
     role: 'teacher',
     classId: ''
   });
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+
+  const fetchClasses = async () => {
+    try {
+      const res = await fetch('/api/auth/classes');
+      const data = await res.json();
+      setClasses(data);
+      if (data.length > 0) {
+        setLoginForm(prev => ({ ...prev, classId: data[0]._id }));
+      }
+    } catch (err) {
+      toast.error('Failed to load classes');
+    }
+  };
 
   const checkSession = async () => {
     try {
@@ -40,19 +79,6 @@ export default function Home() {
       setSession(null);
     } finally {
       setAuthLoading(false);
-    }
-  };
-
-  const fetchClasses = async () => {
-    try {
-      const res = await fetch('/api/auth/classes');
-      const data = await res.json();
-      setClasses(data);
-      if (data.length > 0) {
-        setLoginForm(prev => ({ ...prev, classId: data[0]._id }));
-      }
-    } catch (err) {
-      toast.error('Failed to load classes');
     }
   };
 
@@ -91,7 +117,7 @@ export default function Home() {
     }
   }, [session]);
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoggingIn(true);
     try {
@@ -106,7 +132,7 @@ export default function Home() {
 
       toast.success('Access granted');
       setSession(data);
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     } finally {
       setIsLoggingIn(false);
@@ -144,7 +170,7 @@ export default function Home() {
     if (!selectedCollection) return matchesSearch;
 
     const isNA = s.notApplicable?.[selectedCollection];
-    let status = s.payments?.[selectedCollection];
+    let status: string | undefined | boolean = s.payments?.[selectedCollection];
 
     if (status === true) status = 'PAID';
     if (status === false || status === undefined || status === null) status = 'PENDING';

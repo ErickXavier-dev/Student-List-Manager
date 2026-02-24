@@ -1,19 +1,21 @@
-import { NextResponse } from 'next/server';
-import dbConnect from '@/lib/db';
-import { Class, Student, Collection } from '@/models/Schemas';
+import { Class, Student, Collection } from '../models/Schemas';
+import dbConnect from './db';
+// dotenv.config({ path: '.env.local' });
 
-export async function GET() {
+async function migrate() {
   try {
     await dbConnect();
+    console.log('Connected to database for migration');
 
     // 1. Create Default Class if it doesn't exist
     let defaultClass = await Class.findOne({ name: 'Default' });
     if (!defaultClass) {
       defaultClass = await Class.create({
         name: 'Default',
-        teacherPassword: process.env.ADMIN_PASSWORD || 'password123',
+        teacherPassword: process.env.ADMIN_PASSWORD || 'password123', // Temp default
         teacherPasswordExpires: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000), // 6 months
       });
+      console.log('Created Default Class');
     }
 
     // 2. Assign Students to Default Class
@@ -21,23 +23,21 @@ export async function GET() {
       { classId: { $exists: false } },
       { $set: { classId: defaultClass._id } }
     );
+    console.log(`Updated ${studentsResult.modifiedCount} students`);
 
-    // 3. Assign Collections to Default Class
+    // 3. Assign Collections to Default Class (treat existing as class-specific)
     const collectionsResult = await Collection.updateMany(
       { classId: { $exists: false }, createdByRole: { $exists: false } },
       { $set: { classId: defaultClass._id, createdByRole: 'hod' } }
     );
+    console.log(`Updated ${collectionsResult.modifiedCount} collections`);
 
-    return NextResponse.json({
-      success: true,
-      message: 'Migration completed',
-      details: {
-        studentsUpdated: studentsResult.modifiedCount,
-        collectionsUpdated: collectionsResult.modifiedCount,
-        defaultClassId: defaultClass._id
-      }
-    });
+    console.log('Migration completed successfully');
+    process.exit(0);
   } catch (err) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    console.error('Migration failed:', err);
+    process.exit(1);
   }
 }
+
+migrate();

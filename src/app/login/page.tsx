@@ -5,11 +5,16 @@ import GlassCard from '@/components/ui/GlassCard';
 import { Lock, Loader2, ArrowRight, UserCircle, School, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
+interface ClassData {
+  _id: string;
+  name: string;
+}
+
 export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('hod'); // 'hod', 'teacher', 'rep'
   const [classId, setClassId] = useState('');
-  const [classes, setClasses] = useState([]);
+  const [classes, setClasses] = useState<ClassData[]>([]);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -27,7 +32,7 @@ export default function LoginPage() {
     fetchClasses();
   }, []);
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -46,7 +51,7 @@ export default function LoginPage() {
 
       toast.success('Logged in successfully');
       router.push('/admin');
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     } finally {
       setLoading(false);
@@ -121,4 +126,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

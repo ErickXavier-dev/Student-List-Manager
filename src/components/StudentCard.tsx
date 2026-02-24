@@ -1,17 +1,32 @@
 'use client';
 
 import GlassCard from './ui/GlassCard';
-import { Check, X, Loader2, Ban } from 'lucide-react';
+import { Check, X, Loader2, Ban, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-export default function StudentCard({ student, collectionId, isAdmin, onPaymentUpdate }) {
+interface Student {
+  _id: string;
+  name: string;
+  registerNumber: string;
+  notApplicable?: Record<string, boolean>;
+  payments?: Record<string, string | boolean>;
+}
+
+interface StudentCardProps {
+  student: Student;
+  collectionId: string | null;
+  isAdmin?: boolean;
+  onPaymentUpdate?: (studentId: string, status: string) => void;
+}
+
+export default function StudentCard({ student, collectionId, isAdmin, onPaymentUpdate }: StudentCardProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   // Normalize status. Check notApplicable first.
-  let isNA = collectionId ? student.notApplicable?.[collectionId] : false;
-  let paymentStatus = collectionId ? student.payments?.[collectionId] : undefined;
+  let isNA = collectionId ? student.notApplicable?.[collectionId!] : false;
+  let paymentStatus = collectionId ? student.payments?.[collectionId!] : undefined;
 
   // Backward compatibility: if paymentStatus is boolean
   if (paymentStatus === true) paymentStatus = 'PAID';
@@ -25,7 +40,7 @@ export default function StudentCard({ student, collectionId, isAdmin, onPaymentU
     setIsLoading(true);
     try {
       // Cycle: PENDING/NA -> PAID -> PENDING
-      let newStatus;
+      let newStatus: string | null;
       if (status === 'PAID') newStatus = null; // Unpaid
       else newStatus = 'PAID'; // Paid
 
@@ -41,7 +56,7 @@ export default function StudentCard({ student, collectionId, isAdmin, onPaymentU
 
       if (!res.ok) throw new Error('Failed to update');
 
-      const statusText = newStatus === 'PAID' ? 'PAID' : newStatus === 'NA' ? 'Not Applicable' : 'UNPAID';
+      const statusText = newStatus === 'PAID' ? 'PAID' : 'UNPAID';
       toast.success(`Updated ${student.name}'s status to ${statusText}`);
 
       // Pass the effective status back (null means Pending)
@@ -54,7 +69,7 @@ export default function StudentCard({ student, collectionId, isAdmin, onPaymentU
     }
   };
 
-  const getStatusConfig = (s) => {
+  const getStatusConfig = (s: string) => {
     switch (s) {
       case 'PAID':
         return { color: "bg-emerald-500/20 border-emerald-500/50 text-emerald-200", icon: Check, label: 'Paid' };
@@ -65,8 +80,8 @@ export default function StudentCard({ student, collectionId, isAdmin, onPaymentU
     }
   };
 
-  const config = getStatusConfig(status);
-  const Icon = config.icon;
+  const config = getStatusConfig(status as string);
+  const Icon = config.icon as LucideIcon;
 
   return (
     <GlassCard

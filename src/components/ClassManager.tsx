@@ -6,12 +6,24 @@ import CollectionManager from '@/components/CollectionManager';
 import { Shield, Key, School, ArrowLeft, Users, Layers, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function ClassManager({ classes, fetchData }) {
+interface ClassData {
+  _id: string;
+  name: string;
+  teacherPasswordRevoked: boolean;
+  repPasswordRevoked: boolean;
+}
+
+interface ClassManagerProps {
+  classes: ClassData[];
+  fetchData: () => void;
+}
+
+export default function ClassManager({ classes, fetchData }: ClassManagerProps) {
   const [newClassName, setNewClassName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [editingPasswords, setEditingPasswords] = useState(null); // { id, role }
+  const [editingPasswords, setEditingPasswords] = useState<{ id: string; role: 'teacher' | 'rep' } | null>(null);
   const [newPassword, setNewPassword] = useState('');
-  const [detailClass, setDetailClass] = useState(null); // The class object currently being managed in detail
+  const [detailClass, setDetailClass] = useState<ClassData | null>(null); // The class object currently being managed in detail
   const [classCollections, setClassCollections] = useState([]);
   const [loadingCollections, setLoadingCollections] = useState(false);
 
@@ -44,7 +56,7 @@ export default function ClassManager({ classes, fetchData }) {
     }
   }, [classes, detailClass?._id]);
 
-  const handleCreateClass = async (e) => {
+  const handleCreateClass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClassName.trim()) return;
     setIsCreating(true);
@@ -58,14 +70,14 @@ export default function ClassManager({ classes, fetchData }) {
       toast.success('Class created');
       setNewClassName('');
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.message);
     } finally {
       setIsCreating(false);
     }
   };
 
-  const handleUpdatePassword = async (classId, role) => {
+  const handleUpdatePassword = async (classId: string, role: string) => {
     try {
       const res = await fetch(`/api/admin/classes/${classId}/passwords`, {
         method: 'PUT',
@@ -77,12 +89,12 @@ export default function ClassManager({ classes, fetchData }) {
       setEditingPasswords(null);
       setNewPassword('');
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.message);
     }
   };
 
-  const handleRevokePassword = async (classId, role) => {
+  const handleRevokePassword = async (classId: string, role: string) => {
     try {
       const res = await fetch(`/api/admin/classes/${classId}/passwords`, {
         method: 'PUT',
@@ -92,7 +104,7 @@ export default function ClassManager({ classes, fetchData }) {
       if (!res.ok) throw new Error('Failed to revoke password');
       toast.success(`${role} password revoked`);
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       toast.error(err.message);
     }
   };
@@ -142,7 +154,7 @@ export default function ClassManager({ classes, fetchData }) {
               classId={detailClass._id}
               collections={classCollections}
               detailClass={detailClass}
-              setEditingPasswords={setEditingPasswords}
+              setEditingPasswords={(data) => setEditingPasswords(data)}
               handleRevokePassword={handleRevokePassword}
             />
           </section>

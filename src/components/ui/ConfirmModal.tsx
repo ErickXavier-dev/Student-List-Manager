@@ -3,6 +3,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, X } from 'lucide-react';
 import GlassCard from './GlassCard';
 
+interface ConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title?: string;
+  message?: string;
+  confirmText?: string;
+  cancelText?: string;
+  isDanger?: boolean;
+}
+
 export default function ConfirmModal({
   isOpen,
   onClose,
@@ -12,7 +23,7 @@ export default function ConfirmModal({
   confirmText = "Confirm",
   cancelText = "Cancel",
   isDanger = false
-}) {
+}: ConfirmModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (

@@ -5,11 +5,32 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Skeleton } from './Skeleton';
 
-export default function CollectionApplicabilityModal({ isOpen, onClose, collection }) {
-  const [students, setStudents] = useState([]);
+interface Student {
+  _id: string;
+  name: string;
+  registerNumber: string;
+  notApplicable?: Record<string, boolean>;
+  payments?: Record<string, string | boolean>;
+}
+
+interface Collection {
+  _id: string;
+  title: string;
+  classId?: string;
+  amount: number;
+}
+
+interface CollectionApplicabilityModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  collection: Collection | null;
+}
+
+export default function CollectionApplicabilityModal({ isOpen, onClose, collection }: CollectionApplicabilityModalProps) {
+  const [students, setStudents] = useState<Student[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(null); // studentId of currently updating student
+  const [updating, setUpdating] = useState<string | null>(null); // studentId of currently updating student
 
   useEffect(() => {
     if (isOpen) {
@@ -25,15 +46,15 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
       if (!res.ok) throw new Error('Failed to fetch students');
       const data = await res.json();
       setStudents(data);
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleNA = async (student) => {
-    if (updating) return;
+  const handleToggleNA = async (student: Student) => {
+    if (updating || !collection) return;
     setUpdating(student._id);
 
     const isNA = student.notApplicable?.[collection._id];
@@ -77,8 +98,8 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
     }
   };
 
-  const handleBulkAction = async (action) => {
-    if (updating) return;
+  const handleBulkAction = async (action: string) => {
+    if (updating || !collection) return;
     setUpdating('bulk'); // Generic updating state
 
     try {
@@ -97,7 +118,7 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
 
       // Refresh students
       await fetchStudents();
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     } finally {
       setUpdating(null);
@@ -110,8 +131,7 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
   );
 
   // Check if ALL filtered students are NA (or should we check ALL students? usually ALL students in context)
-  // Logic: "when everyone is selected as no appliable" -> implies all students in the collection.
-  const allNA = students.length > 0 && students.every(s => s.notApplicable?.[collection._id]);
+  const allNA = collection && students.length > 0 && students.every(s => s.notApplicable?.[collection._id]);
 
   return (
     <AnimatePresence>
@@ -139,7 +159,7 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
               <div className="flex gap-2">
                 <button
                   onClick={() => handleBulkAction(allNA ? 'MARK_ALL_APPLICABLE' : 'MARK_EVERYONE_NA')}
-                  disabled={loading || updating}
+                  disabled={loading || updating !== null}
                   className={`
                     flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors border
                     ${allNA
@@ -153,7 +173,7 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
                 {!allNA && (
                   <button
                     onClick={() => handleBulkAction('MARK_ALL_NA')} // This is "Mark Unpaid NA"
-                    disabled={loading || updating}
+                    disabled={loading || updating !== null}
                     className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors border bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
                   >
                     Mark Unpaid as NA
@@ -192,9 +212,9 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
                 <p className="text-center text-white/40 py-8">No students found</p>
               ) : (
                 filteredStudents.map(student => {
-                  const isNA = student.notApplicable?.[collection._id];
+                  const isNA = collection && student.notApplicable?.[collection._id];
                   // Payment status logic
-                  let paymentStatus = student.payments?.[collection._id];
+                  let paymentStatus = collection && student.payments?.[collection._id];
                   if (paymentStatus === true) paymentStatus = 'PAID';
 
                   const isPaid = paymentStatus === 'PAID';
@@ -213,8 +233,8 @@ export default function CollectionApplicabilityModal({ isOpen, onClose, collecti
                           onClick={() => handleToggleNA(student)}
                           disabled={updating === student._id}
                           className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${isNA
-                              ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/20'
-                              : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-transparent'
+                            ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/20'
+                            : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-transparent'
                             }`}
                         >
                           {updating === student._id ? (

@@ -1,8 +1,8 @@
 import dbConnect from '@/lib/db';
 import { Student } from '@/models/Schemas';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   await dbConnect();
 
   try {
@@ -18,7 +18,7 @@ export async function POST(request) {
 
     let updatedCount = 0;
     let createdCount = 0;
-    const errors = [];
+    const errors: string[] = [];
 
     // Drop stale global unique index on registerNumber if it exists
     try {
@@ -48,7 +48,7 @@ export async function POST(request) {
           });
           createdCount++;
         }
-      } catch (err) {
+      } catch (err: any) {
         if (err.code === 11000) {
           errors.push(`Duplicate Register Number: ${registerNumber} in this class`);
         } else {
@@ -70,7 +70,7 @@ export async function POST(request) {
       inputErrors: errors
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload API Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

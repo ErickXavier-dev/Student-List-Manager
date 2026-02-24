@@ -5,11 +5,16 @@ import GlassCard from './ui/GlassCard';
 import { Upload, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function ExcelUploader({ onUploadSuccess, classId }) {
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef(null);
+interface ExcelUploaderProps {
+  onUploadSuccess: () => void;
+  classId: string;
+}
 
-  const handleFileUpload = async (e) => {
+export default function ExcelUploader({ onUploadSuccess, classId }: ExcelUploaderProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -18,11 +23,13 @@ export default function ExcelUploader({ onUploadSuccess, classId }) {
 
     reader.onload = async (event) => {
       try {
-        const bstr = event.target.result;
+        const bstr = event.target?.result;
+        if (!bstr) return;
+
         const workbook = XLSX.read(bstr, { type: 'binary' });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const data = XLSX.utils.sheet_to_json(sheet);
+        const data = XLSX.utils.sheet_to_json(sheet) as any[];
 
         const formattedData = data.map(row => {
           const keys = Object.keys(row);
@@ -64,7 +71,7 @@ export default function ExcelUploader({ onUploadSuccess, classId }) {
 
         if (fileInputRef.current) fileInputRef.current.value = '';
 
-      } catch (error) {
+      } catch (error: any) {
         console.error(error);
         toast.error(error.message);
       } finally {

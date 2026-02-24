@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import dbConnect from '@/lib/db';
 import { Class } from '@/models/Schemas';
 
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   try {
     const { password, role, classId } = await request.json();
     await dbConnect();
@@ -58,7 +58,7 @@ export async function POST(request) {
   }
 }
 
-async function setAuthCookie(role, classId) {
+async function setAuthCookie(role: string, classId: string | null) {
   const cookieData = JSON.stringify({ role, classId, authenticated: true });
   (await cookies()).set('admin_token', cookieData, {
     httpOnly: true,
@@ -68,4 +68,3 @@ async function setAuthCookie(role, classId) {
     path: '/',
   });
 }
-

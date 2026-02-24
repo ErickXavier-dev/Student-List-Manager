@@ -9,14 +9,44 @@ import { UserCog, ReceiptText, Layers, Download, Search, Shield, Key } from 'luc
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
+interface Student {
+  _id: string;
+  name: string;
+  registerNumber: string;
+  notApplicable?: Record<string, boolean>;
+  payments?: Record<string, string | boolean>;
+}
+
+interface Collection {
+  _id: string;
+  title: string;
+  amount: number;
+  classId?: string | null;
+  createdByRole?: string;
+  createdAt: string;
+}
+
+interface ClassData {
+  _id: string;
+  name: string;
+  teacherPasswordRevoked: boolean;
+  repPasswordRevoked: boolean;
+}
+
+interface Session {
+  role: string;
+  classId?: string;
+  className?: string;
+}
+
 export default function AdminPage() {
-  const [session, setSession] = useState(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [activeTab, setActiveTab] = useState('payments');
-  const [students, setStudents] = useState([]);
-  const [collections, setCollections] = useState([]);
-  const [classes, setClasses] = useState([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [classes, setClasses] = useState<ClassData[]>([]);
   const [selectedClassId, setSelectedClassId] = useState('');
-  const [selectedCollection, setSelectedCollection] = useState(null);
+  const [selectedCollection, setSelectedCollection] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
   const [search, setSearch] = useState('');
@@ -83,10 +113,10 @@ export default function AdminPage() {
     }
   }, [collections, selectedCollection]);
 
-  const handlePaymentUpdate = (studentId, newState) => {
+  const handlePaymentUpdate = (studentId: string, newState: string) => {
     setStudents(prev => prev.map(s => {
       if (s._id === studentId) {
-        const newPayments = { ...s.payments, [selectedCollection]: newState };
+        const newPayments = { ...s.payments, [selectedCollection!]: newState };
         return { ...s, payments: newPayments };
       }
       return s;
@@ -104,7 +134,7 @@ export default function AdminPage() {
       if (!selectedCollection) return true;
 
       const isNA = s.notApplicable?.[selectedCollection];
-      let status = s.payments?.[selectedCollection];
+      let status: string | boolean | undefined | null = s.payments?.[selectedCollection];
 
       if (status === true) status = 'PAID';
       if (status === false || status === undefined || status === null) status = 'PENDING';
@@ -124,7 +154,7 @@ export default function AdminPage() {
 
   const handleExport = () => {
     const dataToExport = filteredStudents.map(s => {
-      const base = {
+      const base: Record<string, string | number | undefined> = {
         "Register Number": s.registerNumber,
         "Name": s.name,
       };
@@ -138,7 +168,7 @@ export default function AdminPage() {
 
         base["Collection"] = col?.title;
         base["Amount"] = col?.amount;
-        base["Status"] = isNA ? 'N/A' : status;
+        base["Status"] = isNA ? 'N/A' : (status as string);
       }
       return base;
     });
@@ -308,17 +338,22 @@ export default function AdminPage() {
 
         {/* STUDENTS TAB (Teacher/Rep Only) */}
         {activeTab === 'students' && !isHOD && (
-          <StudentManager classId={session.classId} collections={collections} />
+          <StudentManager
+            classId={session?.classId || ''}
+            collections={collections}
+            setEditingPasswords={() => { }} // Placeholder or implement if needed
+            handleRevokePassword={() => { }}
+          />
         )}
 
         {/* COLLECTIONS TAB */}
         {activeTab === 'collections' && (
           <CollectionManager
             collections={collections}
-            onUpdate={fetchData}
+            onUpdate={() => fetchData()}
             loading={loading}
-            role={session.role}
-            classId={isHOD ? null : session.classId}
+            role={session?.role as 'hod' | 'teacher' | 'rep'}
+            classId={isHOD ? undefined : session?.classId}
             classes={classes}
           />
         )}
@@ -329,7 +364,7 @@ export default function AdminPage() {
         )}
 
         {/* SECURITY TAB (TEACHER ONLY - HOD does it via Classes tab) */}
-        {activeTab === 'security' && session.role === 'teacher' && (
+        {activeTab === 'security' && session?.role === 'teacher' && (
           <div className="max-w-2xl mx-auto glass p-8 rounded-2xl border border-white/10 text-center space-y-6">
             <Key className="mx-auto text-blue-400" size={48} />
             <h3 className="text-2xl font-bold">Class Rep Access</h3>
@@ -344,7 +379,8 @@ export default function AdminPage() {
               <div className="flex gap-4">
                 <button
                   onClick={() => {
-                    const pass = document.getElementById('repPasswordInputTeacher').value;
+                    const passInput = document.getElementById('repPasswordInputTeacher') as HTMLInputElement;
+                    const pass = passInput?.value;
                     if (!pass) return toast.error('Enter password');
                     fetch(`/api/admin/classes/${session.classId}/passwords`, {
                       method: 'PUT',
@@ -358,7 +394,7 @@ export default function AdminPage() {
                 </button>
                 <button
                   onClick={() => {
-                    fetch(`/api/admin/classes/${session.classId}/passwords`, {
+                    fetch(`/api/admin/classes/${session?.classId}/passwords`, {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ targetRole: 'rep', action: 'revoke' })
@@ -376,4 +412,3 @@ export default function AdminPage() {
     </div>
   );
 }
-

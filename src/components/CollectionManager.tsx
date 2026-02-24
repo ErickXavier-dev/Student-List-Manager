@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import GlassCard from './ui/GlassCard';
 import ConfirmModal from './ui/ConfirmModal';
@@ -7,22 +8,54 @@ import { Plus, Trash2, Loader2, IndianRupee, Pencil, Users } from 'lucide-react'
 import { Skeleton } from '@/components/ui/Skeleton';
 import { toast } from 'sonner';
 
-export default function CollectionManager({ collections, onUpdate, loading, role, classId, hideGeneralToggle, classes = [] }) {
+interface Collection {
+  _id: string;
+  title: string;
+  amount: number;
+  classId?: string | null;
+  createdByRole?: string;
+  createdAt: string;
+}
+
+interface ClassData {
+  _id: string;
+  name: string;
+}
+
+interface CollectionManagerProps {
+  collections: Collection[];
+  onUpdate: (newCollection?: Collection) => void;
+  loading: boolean;
+  role: 'hod' | 'teacher' | 'rep';
+  classId?: string;
+  hideGeneralToggle?: boolean;
+  classes?: ClassData[];
+}
+
+export default function CollectionManager({
+  collections,
+  onUpdate,
+  loading,
+  role,
+  classId,
+  hideGeneralToggle,
+  classes = []
+}: CollectionManagerProps) {
   const [formData, setFormData] = useState({ title: '', amount: '', isGeneral: false, targetClassId: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, id: null });
-  const [editModal, setEditModal] = useState({ isOpen: false, collection: null });
-  const [applicabilityModal, setApplicabilityModal] = useState({ isOpen: false, collection: null });
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string | null }>({ isOpen: false, id: null });
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; collection: Collection | null }>({ isOpen: false, collection: null });
+  const [applicabilityModal, setApplicabilityModal] = useState<{ isOpen: boolean; collection: Collection | null }>({ isOpen: false, collection: null });
 
-  const handleEditClick = (col) => {
+  const handleEditClick = (col: Collection) => {
     setEditModal({ isOpen: true, collection: col });
   };
 
-  const handleManageClick = (col) => {
+  const handleManageClick = (col: Collection) => {
     setApplicabilityModal({ isOpen: true, collection: col });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.amount) return;
 
@@ -53,7 +86,7 @@ export default function CollectionManager({ collections, onUpdate, loading, role
       toast.success('Collection Created');
       setFormData({ title: '', amount: '', isGeneral: false, targetClassId: '' });
       if (onUpdate) onUpdate(newCollection);
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     } finally {
       setIsSubmitting(false);
@@ -73,12 +106,12 @@ export default function CollectionManager({ collections, onUpdate, loading, role
 
       toast.success('Collection Deleted');
       if (onUpdate) onUpdate(); // Trigger refresh
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     }
   };
 
-  const handleUpdateCollection = async (id, title, amount) => {
+  const handleUpdateCollection = async (id: string, title: string, amount: string | number) => {
     try {
       const res = await fetch('/api/collections', {
         method: 'PUT',
@@ -92,7 +125,7 @@ export default function CollectionManager({ collections, onUpdate, loading, role
       toast.success('Collection Updated');
       setEditModal({ isOpen: false, collection: null });
       if (onUpdate) onUpdate();
-    } catch (error) {
+    } catch (error: any) {
       toast.error(error.message);
     }
   };
@@ -269,4 +302,3 @@ export default function CollectionManager({ collections, onUpdate, loading, role
     </div>
   );
 }
-

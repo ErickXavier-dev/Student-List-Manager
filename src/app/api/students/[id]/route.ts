@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import { Student } from '@/models/Schemas';
 import { getSession, isHOD, isTeacher, isRep } from '@/lib/auth-utils';
 
-export async function PUT(request, { params }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await dbConnect();
   const session = await getSession();
   const { id } = await params;
@@ -24,12 +24,12 @@ export async function PUT(request, { params }) {
     await student.save();
 
     return NextResponse.json(student);
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await dbConnect();
   const session = await getSession();
   const { id } = await params;
@@ -46,7 +46,7 @@ export async function DELETE(request, { params }) {
 
     await Student.findByIdAndDelete(id);
     return NextResponse.json({ message: 'Student deleted successfully' });
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

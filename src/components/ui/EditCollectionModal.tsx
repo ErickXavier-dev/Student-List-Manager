@@ -4,15 +4,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, IndianRupee } from 'lucide-react';
 import GlassCard from './GlassCard';
 
-export default function EditCollectionModal({ isOpen, onClose, collection, onUpdate }) {
+interface Collection {
+  _id: string;
+  title: string;
+  amount: number;
+}
+
+interface EditCollectionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  collection: Collection | null;
+  onUpdate: (id: string, title: string, amount: string | number) => Promise<void>;
+}
+
+export default function EditCollectionModal({ isOpen, onClose, collection, onUpdate }: EditCollectionModalProps) {
   const [formData, setFormData] = useState({
     title: collection?.title || '',
     amount: collection?.amount || ''
   });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!collection) return;
     setLoading(true);
     await onUpdate(collection._id, formData.title, formData.amount);
     setLoading(false);

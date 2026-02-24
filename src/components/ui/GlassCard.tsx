@@ -1,8 +1,15 @@
 'use client';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils'; // We need to create this util
+import { cn } from '@/lib/utils';
+import { ReactNode } from 'react';
 
-export default function GlassCard({ children, className, onClick }) {
+interface GlassCardProps {
+  children: ReactNode;
+  className?: string;
+  onClick?: () => void;
+}
+
+export default function GlassCard({ children, className, onClick }: GlassCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
